@@ -1,7 +1,7 @@
-diff --git a/local/src/dwm/dwm.c b/local/src/dwm/dwm.c
+diff --git a/dwm.c b/dwm.c
 index 83e44e0..94392b4 100644
---- a/local/src/dwm/dwm.c
-+++ b/local/src/dwm/dwm.c
+--- a/dwm.c
++++ b/dwm.c
 @@ -164,6 +164,7 @@ static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interac
  static void arrange(Monitor *m);
  static void arrangemon(Monitor *m);
