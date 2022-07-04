@@ -1,0 +1,9 @@
+dwm
+
+*.o
+TAGS
+
+# emacs backup files
+*~
+*#
+.#*

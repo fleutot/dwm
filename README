@@ -23,7 +23,10 @@ Running dwm
 -----------
 Add the following line to your .xinitrc to start dwm using startx:
 
-    exec dwm
+    unset XDG_RUNTIME_DIR && exec dwm
+
+Unsetting `XDG_RUNTIME_DIR` allows running two X sessions in different tty at
+the same time. This is useful while developing.
 
 In order to connect dwm to a specific display, make sure that
 the DISPLAY environment variable is set correctly, e.g.:
