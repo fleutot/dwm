@@ -52,7 +52,7 @@
 #define CLEANMASK(mask)         (mask & ~(numlockmask | LockMask) & (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask))
 #define INTERSECT(x, y, w, h, m)    (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) \
 				     * MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
-#define TAGMASK                 ((1 << LENGTH(tags)) - 1)
+#define TAGMASK                 ((1 << num_tags) - 1)
 
 /* enums */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
@@ -151,9 +151,6 @@ int bh, blw = 0;         /* bar geometry */
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
-/* compile-time check if all tags fit into an unsigned int bit array. */
-struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
-
 /* function implementations */
 void
 applyrules(Client *c)
@@ -171,7 +168,7 @@ applyrules(Client *c)
 	class = ch.res_class ? ch.res_class : broken;
 	instance = ch.res_name  ? ch.res_name  : broken;
 
-	for (i = 0; i < LENGTH(rules); i++) {
+	for (i = 0; i < num_rules; i++) {
 		r = &rules[i];
 		if ((!r->title || strstr(c->name, r->title))
 		    && (!r->class || strstr(class, r->class))
@@ -240,8 +237,8 @@ buttonpress(const XEvent *e)
 		i = x = 0;
 		do
 			x += drw_fontset_getwidth(drw, tags[i]) + lrpad;
-		while (ev->x >= x && ++i < LENGTH(tags));
-		if (i < LENGTH(tags)) {
+		while (ev->x >= x && ++i < num_tags);
+		if (i < num_tags) {
 			click = ClkTagBar;
 			arg.ui = 1 << i;
 		} else if (ev->x < x + blw) {
@@ -257,7 +254,7 @@ buttonpress(const XEvent *e)
 		XAllowEvents(dpy, ReplayPointer, CurrentTime);
 		click = ClkClientWin;
 	}
-	for (i = 0; i < LENGTH(buttons); i++)
+	for (i = 0; i < num_buttons; i++)
 		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		    && CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
 			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
@@ -292,7 +289,7 @@ cleanup(void)
 		cleanupmon(mons);
 	for (i = 0; i < CurLast; i++)
 		drw_cur_free(drw, cursor[i]);
-	for (i = 0; i < LENGTH(colors); i++)
+	for (i = 0; i < num_colors; i++)
 		free(scheme[i]);
 	XDestroyWindow(dpy, wmcheckwin);
 	drw_free(drw);
@@ -610,7 +607,7 @@ grabbuttons(Client *c, int focused)
 		if (!focused)
 			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
 				    BUTTONMASK, GrabModeSync, GrabModeSync, None, None);
-		for (i = 0; i < LENGTH(buttons); i++)
+		for (i = 0; i < num_buttons; i++)
 			if (buttons[i].click == ClkClientWin) {
 				for (j = 0; j < LENGTH(modifiers); j++)
 					XGrabButton(dpy, buttons[i].button,
@@ -631,7 +628,7 @@ grabkeys(void)
 		KeyCode code;
 
 		XUngrabKey(dpy, AnyKey, AnyModifier, root);
-		for (i = 0; i < LENGTH(keys); i++)
+		for (i = 0; i < num_keys; i++)
 			if ((code = XKeysymToKeycode(dpy, keys[i].keysym)))
 				for (j = 0; j < LENGTH(modifiers); j++)
 					XGrabKey(dpy, code, keys[i].mod | modifiers[j], root,
@@ -660,7 +657,7 @@ keypress(const XEvent *e)
 
 	ev = &e->xkey;
 	keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
-	for (i = 0; i < LENGTH(keys); i++)
+	for (i = 0; i < num_keys; i++)
 		if (keysym == keys[i].keysym
 		    && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
 		    && keys[i].func)
@@ -987,7 +984,7 @@ setup(void)
 	sh = DisplayHeight(dpy, screen);
 	root = RootWindow(dpy, screen);
 	drw = drw_create(dpy, screen, root, sw, sh);
-	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
+	if (!drw_fontset_create(drw, fonts, num_fonts))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
 	bh = drw->fonts->h + 2;
@@ -1012,10 +1009,8 @@ setup(void)
 	cursor[CurResize] = drw_cur_create(drw, XC_sizing);
 	cursor[CurMove] = drw_cur_create(drw, XC_fleur);
 	/* init appearance */
-	/* TODO: why not let config.[ch] allocate color schemes statically?
-	 * Something to do with drw? */
-	scheme = ecalloc(LENGTH(colors), sizeof(Clr *));
-	for (i = 0; i < LENGTH(colors); i++)
+	scheme = ecalloc(num_colors, sizeof(Clr *));
+	for (i = 0; i < num_colors; i++)
 		scheme[i] = drw_scm_create(drw, colors[i], 3);
 	/* init bars */
 	updatebars();
