@@ -42,8 +42,8 @@ static unsigned int read_array_current_index;
 //******************************************************************************
 // Helper functions.
 static void display(void const * const a);
-static void list_populate(struct ll_node **list,
-                          int data[],
+static void list_populate(struct linkedlist *list,
+                          int *data_objects[],
                           int number_of_elements);
 static void list_read_to_array_reset(void);
 static void list_read_to_array(void *a);
@@ -54,6 +54,7 @@ static bool int_arrays_equal(int const * const a,
 // Test functions.
 static void test_linkedlist_run_for_all(void);
 static void test_linkedlist_data_handle_get(void);
+static void test_linkedlist_add_before(void);
 
 //******************************************************************************
 // Function definitions
@@ -62,6 +63,7 @@ int main(void)
 {
     test_linkedlist_run_for_all();
     test_linkedlist_data_handle_get();
+    test_linkedlist_add_before();
     printf("All tests passed.\n");
 }
 
@@ -73,16 +75,26 @@ static void test_linkedlist_run_for_all(void)
 {
     TEST_START_PRINT();
     int data[] = {1, 2, 3, 4, 5};
+    int *data_objects[NB_ELEMENTS(data)];
+    // linkedlists requires dynamic allocation for their objects.
+    for (int i = 0; i < NB_ELEMENTS(data); i++) {
+        data_objects[i] = malloc(sizeof(data[0]));
+        *data_objects[i] = data[i];
+    }
 
-    struct ll_node *list = NULL;
-    list_populate(&list, data, NB_ELEMENTS(data));
+    struct linkedlist list = {
+        .head = NULL,
+        .size = 0
+    };
+
+    list_populate(&list, data_objects, NB_ELEMENTS(data));
 
     list_read_to_array_reset();
-    linkedlist_run_for_all(list, list_read_to_array);
+    linkedlist_run_for_all(&list, list_read_to_array);
 
     assert(int_arrays_equal(data, read_array, NB_ELEMENTS(data)));
 
-    linkedlist_destroy(list);
+    linkedlist_destroy(&list);
     TEST_END_PRINT();
 }
 
@@ -90,12 +102,23 @@ static void test_linkedlist_data_handle_get(void)
 {
     TEST_START_PRINT();
     int data[] = {11, 12, 13, 14, 15};
+    int *data_objects[NB_ELEMENTS(data)];
+    // linkedlists requires dynamic allocation for their objects.
+    for (int i = 0; i < NB_ELEMENTS(data); i++) {
+        data_objects[i] = malloc(sizeof(data[0]));
+        *data_objects[i] = data[i];
+    }
+
     unsigned int pos = 3;
 
-    struct ll_node *list = NULL;
-    list_populate(&list, data, NB_ELEMENTS(data));
+    struct linkedlist list = {
+        .head = NULL,
+        .size = 0
+    };
 
-    int *result_ptr = (int *) linkedlist_data_handle_get(list, pos);
+    list_populate(&list, data_objects, NB_ELEMENTS(data));
+
+    int *result_ptr = (int *) linkedlist_data_handle_get(&list, pos);
 
     assert(result_ptr != NULL);
     assert(*result_ptr == data[pos]);
@@ -103,14 +126,53 @@ static void test_linkedlist_data_handle_get(void)
     // Test the wrap around functionality.
     const unsigned int other_pos = 2;
     result_ptr = (int *) linkedlist_data_handle_get(
-        list,
+        &list,
         other_pos + NB_ELEMENTS(data)
         );
 
     assert(result_ptr != NULL);
     assert(*result_ptr == data[other_pos]);
 
-    linkedlist_destroy(list);
+    linkedlist_destroy(&list);
+    TEST_END_PRINT();
+}
+
+static void test_linkedlist_add_before(void)
+{
+    TEST_START_PRINT();
+    int data[] = {1, 2, 3, 4, 5};
+    int *data_objects[NB_ELEMENTS(data)];
+    // linkedlists requires dynamic allocation for their objects.
+    for (int i = 0; i < NB_ELEMENTS(data); i++) {
+        data_objects[i] = malloc(sizeof(data[0]));
+        *data_objects[i] = data[i];
+    }
+
+    struct linkedlist list = {
+        .head = NULL,
+        .size = 0
+    };
+    list_populate(&list, data_objects, NB_ELEMENTS(data));
+
+    int extra_data = 42;
+    int *extra_data_object = malloc(sizeof(extra_data));
+    *extra_data_object = extra_data;
+
+    linkedlist_add_before(&list, data_objects[2], extra_data_object);
+
+    list_read_to_array_reset();
+    linkedlist_run_for_all(&list, list_read_to_array);
+
+    assert(int_arrays_equal((int[]) {1, 2, 42, 3, 4, 5}, read_array, NB_ELEMENTS(data) + 1));
+
+    linkedlist_destroy(&list);
+    TEST_END_PRINT();
+}
+
+static void test_linkedlist_rm_at_pos(void)
+{
+    TEST_START_PRINT();
+
     TEST_END_PRINT();
 }
 
@@ -164,15 +226,12 @@ static void display(void const * const a)
 /// \param  data The actual data array to fill the list with.
 /// \param  number_of_elements The size of the data array.
 //  ----------------------------------------------------------------------------
-static void list_populate(struct ll_node **list,
-                          int data[],
+static void list_populate(struct linkedlist *list,
+                          int *data_objects[],
                           int number_of_elements)
 {
     for (int i = 0; i < number_of_elements; i++) {
-        int *new_data_object = malloc(sizeof(int));
-
-        *new_data_object = data[i];
-        *list = linkedlist_add(*list, new_data_object);
+        linkedlist_add(list, data_objects[i]);
     }
 }
 

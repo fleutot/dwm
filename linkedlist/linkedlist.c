@@ -15,10 +15,6 @@ struct ll_node {
     struct ll_node *next;
 };
 
-struct linkedlist_s {
-    int size;
-    struct ll_node *head;
-};
 
 //******************************************************************************
 // Module constants
@@ -32,6 +28,7 @@ struct linkedlist_s {
 // Function prototypes
 //******************************************************************************
 static struct ll_node *nodes_walker(struct ll_node *start, int pos);
+static void nodes_run_for_all(struct ll_node *n, void (*callback)(void *data));
 
 //******************************************************************************
 // Function definitions
@@ -41,9 +38,14 @@ static struct ll_node *nodes_walker(struct ll_node *start, int pos);
 /// @brief  Add a new node  at the end of a linked list, with content
 /// data.
 /// @attention  The data object must be dynamically allocated since the list's
-/// destroy function uses free() on all data objects.
+/// remove functions use free() on data objects.
 //  ----------------------------------------------------------------------------
-struct ll_node *linkedlist_add(struct ll_node *dst, void *data)
+void linkedlist_add(struct linkedlist *list, void *data)
+{
+    linkedlist_add_before(list, NULL, data);
+}
+
+void linkedlist_add_before(struct linkedlist *list, void *at, void *data)
 {
     struct ll_node *node= malloc(sizeof (struct ll_node));
 
@@ -52,35 +54,36 @@ struct ll_node *linkedlist_add(struct ll_node *dst, void *data)
         .next = NULL
     };
 
-    if (dst == NULL) {
-        // NULL means this list was empty.
-        dst = node;
+    if (list->head == NULL || list->size == 0) {
+        list->head = node;
+        list->size = 1;
     } else {
-        // Walk to the last node.
-        struct ll_node *n = (struct ll_node *) dst;
-        while (n->next != NULL) {
+        // Walk to the last node, or before node `at`.
+        struct ll_node *n = list->head;
+        while (n->next != NULL && n->next->data != at) {
             n = n->next;
         }
+        node->next = n->next;
         n->next = node;
+        list->size++;
     }
-    return dst;
 }
 
 
 //  ----------------------------------------------------------------------------
-/// \brief  Free all nodes of the list passed as parameter, then the list object
-/// itself.
+/// \brief  Free all nodes of the list passed as parameter.
 //  ----------------------------------------------------------------------------
-void linkedlist_destroy(struct ll_node *list)
+void linkedlist_destroy(struct linkedlist *list)
 {
     if (list == NULL) {
         return;
     } else {
-        linkedlist_destroy(list->next);
-        if (list->data != NULL) {
-            //free((void *) list->data);
+        struct ll_node *next;
+        for (struct ll_node *n = list->head; n != NULL; n = next) {
+            next = n->next;
+            free(n->data);
+            free(n);
         }
-        free(list);
     }
 }
 
@@ -88,14 +91,13 @@ void linkedlist_destroy(struct ll_node *list)
 //  ----------------------------------------------------------------------------
 /// \brief  Run the callback function on all nodes' data member.
 //  ----------------------------------------------------------------------------
-void linkedlist_run_for_all(struct ll_node *list,
+void linkedlist_run_for_all(struct linkedlist *list,
                             void (*callback) (void *data))
 {
-    if (list == NULL) {
+    if (list == NULL || list->head == NULL) {
         return;
     }
-    callback(list->data);
-    linkedlist_run_for_all(list->next, callback);
+    nodes_run_for_all(list->head, callback);
 }
 
 //  ----------------------------------------------------------------------------
@@ -105,10 +107,10 @@ void linkedlist_run_for_all(struct ll_node *list,
 /// \param  position
 /// \return Pointer to the data at position in list.
 //  ----------------------------------------------------------------------------
-void *linkedlist_data_handle_get(struct ll_node * const list,
+void *linkedlist_data_handle_get(struct linkedlist * const list,
                                  unsigned int const position)
 {
-    struct ll_node *walker = nodes_walker(list, position);
+    struct ll_node *walker = nodes_walker(list->head, position);
 
     return walker->data;
 }
@@ -132,4 +134,12 @@ static struct ll_node *nodes_walker(struct ll_node *start, int pos)
         }
     }
     return walker;
+}
+
+static void nodes_run_for_all(struct ll_node *n, void (*callback)(void *data))
+{
+    callback(n->data);
+    if (n->next != NULL) {
+        nodes_run_for_all(n->next, callback);
+    }
 }

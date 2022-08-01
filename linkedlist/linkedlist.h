@@ -11,19 +11,32 @@ Copyright (c) 2013 Gauthier Fleutot Ostervall
 // Sizes are saved as int, make sure this MAX_SIZE is under INT_MAX.
 #define LINKEDLIST_MAX_SIZE (5000U)
 
-// Do not defin your own ll_node variables, use the function linkedlist_add().
 struct ll_node;
+
+struct linkedlist {
+    int size;
+    struct ll_node *head;
+};
 
 //  ----------------------------------------------------------------------------
 /// \brief  Link a new element at the end of the destination list.
-/// \param  dst Destination list.
-/// \param  data Pointer to the data content of the new node.
-/// \return The updated list. This is useful if dst was empty before calling
-/// this function.
+/// \param  l  Destination list.
+/// \param  data  Pointer to the data content of the new node.
 /// \attention  The data object pointed to by data must be allocated
 /// dynamically. Addresses to auto or global variables may not be used.
 //  ----------------------------------------------------------------------------
-struct ll_node *linkedlist_add(struct ll_node *dst, void *data);
+void linkedlist_add(struct linkedlist *l, void *data);
+
+//  ----------------------------------------------------------------------------
+/// \brief  Link a new element at the place of the `at` element.
+/// \param  l  Destination list.
+/// \param  at  Data pointer to add at. Comparison done on pointer value, and
+/// not for the node itself.
+/// \param  data Pointer to the data content of the new node.
+/// \attention  The data object pointed to by data must be allocated
+/// dynamically. Addresses to auto or global variables may not be used.
+//  ----------------------------------------------------------------------------
+void linkedlist_add_before(struct linkedlist *l, void *at, void *data);
 
 // ----------------------------------------------------------------------------
 /// \brief Destroy the list passed as parameter. Only the list and its nodes are
@@ -31,7 +44,7 @@ struct ll_node *linkedlist_add(struct ll_node *dst, void *data);
 /// (probably before destroying the list itself).
 /// \param list The list to destroy.
 // ----------------------------------------------------------------------------
-void linkedlist_destroy(struct ll_node *list);
+void linkedlist_destroy(struct linkedlist *l);
 
 //  ----------------------------------------------------------------------------
 /// \brief  Run the callback function passed as parameter on the data of all
@@ -40,7 +53,7 @@ void linkedlist_destroy(struct ll_node *list);
 /// \param  list The list to run the callback on.
 /// \param  callback Function pointer to the function to run on data.
 //  ----------------------------------------------------------------------------
-void linkedlist_run_for_all(struct ll_node *list,
+void linkedlist_run_for_all(struct linkedlist *l,
                             void (*callback)(void *data));
 
 //  ----------------------------------------------------------------------------
@@ -50,13 +63,13 @@ void linkedlist_run_for_all(struct ll_node *list,
 /// \param  list The list to explore.
 /// \param  position The index to the node of interest.
 //  ----------------------------------------------------------------------------
-void *linkedlist_data_handle_get(struct ll_node * const list,
+void *linkedlist_data_handle_get(struct linkedlist *l,
                                  unsigned int const position);
 
 
 //  ----------------------------------------------------------------------------
 /// \brief Get the size of the list passed as parameter.
 //  ----------------------------------------------------------------------------
-int linkedlist_size_get(struct ll_node * const list);
+int linkedlist_size_get(struct linkedlist *l);
 
 #endif // LINKEDLIST_H_INCLUDED
