@@ -55,6 +55,7 @@ static bool int_arrays_equal(int const * const a,
 static void test_linkedlist_run_for_all(void);
 static void test_linkedlist_data_handle_get(void);
 static void test_linkedlist_add_before(void);
+static void test_linkedlist_rm(void);
 
 //******************************************************************************
 // Function definitions
@@ -64,6 +65,7 @@ int main(void)
     test_linkedlist_run_for_all();
     test_linkedlist_data_handle_get();
     test_linkedlist_add_before();
+    test_linkedlist_rm();
     printf("All tests passed.\n");
 }
 
@@ -169,9 +171,47 @@ static void test_linkedlist_add_before(void)
     TEST_END_PRINT();
 }
 
-static void test_linkedlist_rm_at_pos(void)
+static void test_linkedlist_rm(void)
 {
     TEST_START_PRINT();
+    int data[] = {1, 2, 3, 4, 5};
+    int *data_objects[NB_ELEMENTS(data)];
+    // linkedlists requires dynamic allocation for their objects.
+    for (int i = 0; i < NB_ELEMENTS(data); i++) {
+        data_objects[i] = malloc(sizeof(data[0]));
+        *data_objects[i] = data[i];
+    }
+
+    struct linkedlist list = {
+        .head = NULL,
+        .size = 0
+    };
+    list_populate(&list, data_objects, NB_ELEMENTS(data));
+
+    // Remove first
+    linkedlist_rm(&list, data_objects[0]);
+    list_read_to_array_reset();
+    linkedlist_run_for_all(&list, list_read_to_array);
+    assert(int_arrays_equal((int[]) {2, 3, 4, 5}, read_array, list.size));
+
+    // Remove in the middle
+    linkedlist_rm(&list, data_objects[2]);
+    list_read_to_array_reset();
+    linkedlist_run_for_all(&list, list_read_to_array);
+    assert(int_arrays_equal((int[]) {2, 4, 5}, read_array, list.size));
+
+    // Remove last
+    linkedlist_rm(&list, data_objects[4]);
+    list_read_to_array_reset();
+    linkedlist_run_for_all(&list, list_read_to_array);
+    assert(int_arrays_equal((int[]) {2, 4}, read_array, list.size));
+
+    // Try to remove data not in list
+    int *external_data = malloc(sizeof(*external_data));
+    linkedlist_rm(&list, external_data);
+    list_read_to_array_reset();
+    linkedlist_run_for_all(&list, list_read_to_array);
+    assert(int_arrays_equal((int[]) {2, 4}, read_array, list.size));
 
     TEST_END_PRINT();
 }

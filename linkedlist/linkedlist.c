@@ -10,12 +10,6 @@ Copyright (c) 2013 Gauthier Fleutot Ostervall
 #include <stdlib.h>
 #include <string.h>
 
-struct ll_node {
-    void *data;
-    struct ll_node *next;
-};
-
-
 //******************************************************************************
 // Module constants
 //******************************************************************************
@@ -45,6 +39,11 @@ void linkedlist_add(struct linkedlist *list, void *data)
     linkedlist_add_before(list, NULL, data);
 }
 
+void linkedlist_prepend(struct linkedlist *list, void *data)
+{
+    linkedlist_add_before(list, list->head, data);
+}
+
 void linkedlist_add_before(struct linkedlist *list, void *at, void *data)
 {
     struct ll_node *node= malloc(sizeof (struct ll_node));
@@ -69,6 +68,28 @@ void linkedlist_add_before(struct linkedlist *list, void *at, void *data)
     }
 }
 
+void linkedlist_rm(struct linkedlist *l, void *data)
+{
+    struct ll_node *n;
+    struct ll_node *to_remove;
+
+    if (l->head->data == data) {
+        to_remove = l->head;
+        l->head = l->head->next;
+    } else {
+        for (n = l->head;
+	     n != NULL && n->next != NULL && n->next->data != data;
+	     n = n->next) {
+        }
+        if (!n || !n->next)
+            return;
+        to_remove = n->next;
+        n->next = n->next->next;
+    }
+
+    free(to_remove);
+    l->size--;
+}
 
 //  ----------------------------------------------------------------------------
 /// \brief  Free all nodes of the list passed as parameter.
@@ -85,6 +106,8 @@ void linkedlist_destroy(struct linkedlist *list)
             free(n);
         }
     }
+    list->head = NULL;
+    list->size = 0;
 }
 
 
@@ -98,6 +121,24 @@ void linkedlist_run_for_all(struct linkedlist *list,
         return;
     }
     nodes_run_for_all(list->head, callback);
+}
+
+
+void linkedlist_next_select(struct linkedlist *list)
+{
+    if ((list->selected == NULL) || (list->selected->next == NULL)) {
+        list->selected = list->head;
+    } else {
+        list->selected = list->selected->next;
+    }
+}
+
+void *linkedlist_selected_data_get(struct linkedlist *list)
+{
+    if (list == NULL || list->selected == NULL) {
+        return NULL;
+    }
+    return list->selected->data;
 }
 
 //  ----------------------------------------------------------------------------
