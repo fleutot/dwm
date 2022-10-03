@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
-Copyright (c) 2013 Gauthier Fleutot Ostervall
-----------------------------------------------------------------------------*/
+  Copyright (c) 2013 Gauthier Fleutot Ostervall
+  ----------------------------------------------------------------------------*/
 #include "linkedlist.h"
 
 #include <assert.h>
@@ -22,7 +22,6 @@ Copyright (c) 2013 Gauthier Fleutot Ostervall
 // Function prototypes
 //******************************************************************************
 static struct ll_node *nodes_walker(struct ll_node *start, int pos);
-static void nodes_run_for_all(struct ll_node *n, void (*callback)(void *data));
 
 //******************************************************************************
 // Function definitions
@@ -34,111 +33,199 @@ static void nodes_run_for_all(struct ll_node *n, void (*callback)(void *data));
 /// @attention  The data object must be dynamically allocated since the list's
 /// remove functions use free() on data objects.
 //  ----------------------------------------------------------------------------
-void linkedlist_add(struct linkedlist *list, void *data)
+void list_add(struct list *list, void *data)
 {
-    linkedlist_add_before(list, NULL, data);
+        list_add_before(list, NULL, data);
 }
 
-void linkedlist_prepend(struct linkedlist *list, void *data)
+void list_prepend(struct list *list, void *data)
 {
-    linkedlist_add_before(list, list->head, data);
+        list_add_before(list, list->head, data);
 }
 
-void linkedlist_add_before(struct linkedlist *list, void *at, void *data)
+void list_add_before(struct list *list, void *at, void *data)
 {
-    struct ll_node *node= malloc(sizeof (struct ll_node));
+        struct ll_node *node= malloc(sizeof (struct ll_node));
 
-    *node = (struct ll_node) {
-        .data = data,
-        .next = NULL
-    };
+        *node = (struct ll_node) {
+                .data = data,
+                .next = NULL
+        };
 
-    if (list->head == NULL || list->size == 0) {
-        list->head = node;
-        list->size = 1;
-    } else {
-        // Walk to the last node, or before node `at`.
-        struct ll_node *n = list->head;
-        while (n->next != NULL && n->next->data != at) {
-            n = n->next;
+        if (list->head == NULL || list->size == 0) {
+                list->head = node;
+                list->size = 1;
+        } else {
+                // Walk to the last node, or before node `at`.
+                struct ll_node *n = list->head;
+                while (n->next != NULL && n->next->data != at) {
+                        n = n->next;
+                }
+                node->next = n->next;
+                n->next = node;
+                list->size++;
         }
-        node->next = n->next;
-        n->next = node;
-        list->size++;
-    }
 }
 
-void linkedlist_rm(struct linkedlist *l, void *data)
+void list_rm(struct list *l, void *data)
 {
-    struct ll_node *n;
-    struct ll_node *to_remove;
+        struct ll_node *n;
+        struct ll_node *to_remove;
 
-    if (l->head->data == data) {
-        to_remove = l->head;
-        l->head = l->head->next;
-    } else {
-        for (n = l->head;
-	     n != NULL && n->next != NULL && n->next->data != data;
-	     n = n->next) {
+        if (l->head->data == data) {
+                to_remove = l->head;
+                l->head = l->head->next;
+        } else {
+                for (n = l->head;
+                     n != NULL && n->next != NULL && n->next->data != data;
+                     n = n->next) {
+                }
+                if (!n || !n->next)
+                        return;
+                to_remove = n->next;
+                n->next = n->next->next;
         }
-        if (!n || !n->next)
-            return;
-        to_remove = n->next;
-        n->next = n->next->next;
+
+        free(to_remove);
+        l->size--;
+}
+
+void *list_pop(struct list *l)
+{
+    if (l->head == NULL) {
+        return NULL;
     }
 
-    free(to_remove);
+    if (l->head->next == NULL) {
+        /* Only one element */
+        void *data = l->head->data;
+        free(l->head);
+        l->head = NULL;
+        l->size--;
+        return data;
+    }
+
+    struct ll_node *new_last;
+    for (
+        new_last = l->head;
+        new_last->next->next != NULL;
+        new_last = new_last->next) {
+    }
+
+    void *data = new_last->next->data;
+    free(new_last->next);
+    new_last->next = NULL;
     l->size--;
+    return data;
 }
 
 //  ----------------------------------------------------------------------------
 /// \brief  Free all nodes of the list passed as parameter.
 //  ----------------------------------------------------------------------------
-void linkedlist_destroy(struct linkedlist *list)
+void list_destroy(struct list *list)
 {
-    if (list == NULL) {
-        return;
-    } else {
-        struct ll_node *next;
-        for (struct ll_node *n = list->head; n != NULL; n = next) {
-            next = n->next;
-            free(n->data);
-            free(n);
+        if (list == NULL) {
+                return;
+        } else {
+                struct ll_node *next;
+                for (struct ll_node *n = list->head; n != NULL; n = next) {
+                        next = n->next;
+                        free(n->data);
+                        free(n);
+                }
         }
-    }
-    list->head = NULL;
-    list->size = 0;
+        list->head = NULL;
+        list->size = 0;
 }
 
 
 //  ----------------------------------------------------------------------------
 /// \brief  Run the callback function on all nodes' data member.
 //  ----------------------------------------------------------------------------
-void linkedlist_run_for_all(struct linkedlist *list,
-                            void (*callback) (void *data))
+void list_run_for_all(
+    struct list *list,
+    void (*callback) (void *data, void *storage),
+    void *storage)
 {
-    if (list == NULL || list->head == NULL) {
-        return;
-    }
-    nodes_run_for_all(list->head, callback);
+        if (list == NULL || list->head == NULL) {
+                return;
+        }
+        for (struct ll_node *n = list->head; n != NULL; n = n->next) {
+            callback(n->data, storage);
+        }
 }
 
-
-void linkedlist_next_select(struct linkedlist *list)
+void *list_find(
+	struct list *list,
+	bool (*callback)(void *data, void *storage),
+	void *storage)
 {
-    if ((list->selected == NULL) || (list->selected->next == NULL)) {
-        list->selected = list->head;
-    } else {
-        list->selected = list->selected->next;
-    }
+        struct ll_node *n = list->head;
+        void *found_data = NULL;
+
+        while (n != NULL && found_data == NULL) {
+                if (callback(n->data, storage))
+                        found_data = n->data;
+                n = n->next;
+        }
+        return found_data;
 }
 
-void *linkedlist_selected_data_get(struct linkedlist *list)
+void list_select(struct list *list, void *data)
 {
-    if (list == NULL || list->selected == NULL) {
-        return NULL;
-    }
-    return list->selected->data;
+	struct ll_node *n;
+	for (
+		n = list->head;
+		n != NULL && n->data != data;
+		n = n->next
+	) {
+	}
+
+	if (n != NULL) {
+		list->selected = n;
+	}
+}
+
+void *list_next_select(struct list *list)
+{
+        if ((list->selected == NULL) || (list->selected->next == NULL)) {
+                list->selected = list->head;
+        } else {
+                list->selected = list->selected->next;
+        }
+
+	return list->selected == NULL ? NULL : list->selected->data;
+}
+
+void *list_prev_select(struct list *l)
+{
+	if (l->head == NULL
+	    || l->head->next == NULL
+	    || l->selected == NULL
+	) {
+		l->selected = l->head;
+		return l->selected == NULL ? NULL : l->selected->data;
+	}
+
+	struct ll_node *n;
+	for (n = l->head;
+	     n->next != l->selected && n->next != NULL;
+	     n = n->next) {
+	}
+
+	l->selected = n;
+	return l->selected->data;
+}
+
+void *list_selected_data_get(struct list *list)
+{
+	printf("list: selected data get\n"); fflush(stdout);
+        if (list == NULL || list->selected == NULL) {
+		printf("list: null\n"); fflush(stdout);
+                return NULL;
+        }
+	printf("list: data here\n"); fflush(stdout);
+        return list->selected->data;
 }
 
 //  ----------------------------------------------------------------------------
@@ -148,12 +235,13 @@ void *linkedlist_selected_data_get(struct linkedlist *list)
 /// \param  position
 /// \return Pointer to the data at position in list.
 //  ----------------------------------------------------------------------------
-void *linkedlist_data_handle_get(struct linkedlist * const list,
-                                 unsigned int const position)
+void *list_data_handle_get(
+        struct list * const list,
+        unsigned int const position)
 {
-    struct ll_node *walker = nodes_walker(list->head, position);
+        struct ll_node *walker = nodes_walker(list->head, position);
 
-    return walker->data;
+        return walker->data;
 }
 
 // ----------------------------------------------------------------------------
@@ -165,22 +253,14 @@ void *linkedlist_data_handle_get(struct linkedlist * const list,
 //  ----------------------------------------------------------------------------
 static struct ll_node *nodes_walker(struct ll_node *start, int pos)
 {
-    struct ll_node *walker = start;
-    for (int i = 0; i < pos; i++) {
-        if (walker->next != NULL) {
-            walker = walker->next;
-        } else {
-            // wrap around.
-            walker = start;
+        struct ll_node *walker = start;
+        for (int i = 0; i < pos; i++) {
+                if (walker->next != NULL) {
+                        walker = walker->next;
+                } else {
+                        // wrap around.
+                        walker = start;
+                }
         }
-    }
-    return walker;
-}
-
-static void nodes_run_for_all(struct ll_node *n, void (*callback)(void *data))
-{
-    callback(n->data);
-    if (n->next != NULL) {
-        nodes_run_for_all(n->next, callback);
-    }
+        return walker;
 }

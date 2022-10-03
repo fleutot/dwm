@@ -7,7 +7,7 @@
 /* This must come before including header files using the type. */
 typedef struct Client Client;
 
-#include "monitor.h"
+struct Monitor;
 
 enum { SchemeNorm, SchemeSel };                         /* color schemes */
 
@@ -22,7 +22,7 @@ struct Client {
 	int          isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
 	Client       *next;
 	Client       *snext;
-	Monitor      *mon;
+	struct Monitor      *mon;
 	Window       win;
 };
 

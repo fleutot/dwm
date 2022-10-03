@@ -31,7 +31,7 @@ const char *colors[][3] = {
 const int num_colors = LENGTH(colors);
 
 /* tagging */
-const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+const char *tags[NUMBER_OF_TAGS] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 const int num_tags = LENGTH(tags);
@@ -100,6 +100,8 @@ Key keys[] = {
 	{ MODKEY | ShiftMask,     XK_space,  togglefloating, { 0 } },
 	{ MODKEY,                 XK_0,      view,           { .ui = ~0          } },
 	{ MODKEY | ShiftMask,     XK_0,      tag,            { .ui = ~0          } },
+       // TODO: keeping this focusmon for now, but I want absolute mon
+       // selection in the future. Mod+w = select monitor 1
 	{ MODKEY,                 XK_comma,  focusmon,       { .i  = -1          } },
 	{ MODKEY,                 XK_period, focusmon,       { .i  = +1          } },
 	{ MODKEY | ShiftMask,     XK_comma,  tagmon,         { .i  = -1          } },
@@ -135,6 +137,6 @@ Button buttons[] = {
 	{ ClkTagBar,     0,            Button1, view,           { 0           } },
 	{ ClkTagBar,     0,            Button3, toggleview,     { 0           } },
 	{ ClkTagBar,     MOUSE_MODKEY, Button1, tag,            { 0           } },
-	{ ClkTagBar,     MOUSE_MODKEY, Button3, toggletag,      { 0           } },
+	//{ ClkTagBar,     MOUSE_MODKEY, Button3, toggletag,      { 0           } },
 };
 const int num_buttons = LENGTH(buttons);

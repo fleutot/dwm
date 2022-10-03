@@ -1,6 +1,7 @@
 #include <X11/Xatom.h>
 #include <unistd.h>
 
+#include "bar.h"
 #include "dwm.h"
 #include "config.h"
 #include "input.h"
@@ -10,7 +11,7 @@
 //******************************************************************************
 // Prototypes
 //******************************************************************************
-static Monitor *dirtomon(int dir);
+static struct Monitor *dirtomon(int dir);
 
 //******************************************************************************
 // Definitions
@@ -18,13 +19,17 @@ static Monitor *dirtomon(int dir);
 void
 focusmon(const Arg *arg)
 {
-	Monitor *m;
+	struct Monitor *m;
 
-	if (!mons->next)
+#if 0
+	// Unnecessary, dirtomon takes care of size 1. and 0 To be verified
+	if (mons.size <= 1)
 		return;
-	if ((m = dirtomon(arg->i)) == selmon)
+#endif
+	m = dirtomon(arg->i);
+	if (m == selmon)
 		return;
-	unfocus(selmon->sel, 0);
+	unfocus(selmon->tagview->active_client, 0);
 	selmon = m;
 	focus(NULL);
 }
@@ -32,22 +37,15 @@ focusmon(const Arg *arg)
 void
 focusstack(const Arg *arg)
 {
-	Client *c = NULL, *i;
+	Client *c = NULL;
 
-	if (!selmon->sel)
+	if (!selmon->tagview->active_client)
 		return;
+
 	if (arg->i > 0) {
-		for (c = selmon->sel->next; c && !isvisible(c); c = c->next);
-		if (!c)
-			for (c = selmon->clients; c && !isvisible(c); c = c->next);
+		c = list_next_select(&selmon->tagview->clients);
 	} else {
-		for (i = selmon->clients; i != selmon->sel; i = i->next)
-			if (isvisible(i))
-				c = i;
-		if (!c)
-			for (; i; i = i->next)
-				if (isvisible(i))
-					c = i;
+		c = list_prev_select(&selmon->tagview->clients);
 	}
 	if (c) {
 		focus(c);
@@ -65,13 +63,15 @@ incnmaster(const Arg *arg)
 void
 killclient(const Arg *arg)
 {
-	if (!selmon->sel)
+	if (selmon->tagview->active_client == NULL) {
 		return;
-	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
+	}
+
+	if (!sendevent(selmon->tagview->active_client, wmatom[WMDelete])) {
 		XGrabServer(dpy);
 		XSetErrorHandler(xerrordummy);
 		XSetCloseDownMode(dpy, DestroyAll);
-		XKillClient(dpy, selmon->sel->win);
+		XKillClient(dpy, selmon->tagview->active_client->win);
 		XSync(dpy, False);
 		XSetErrorHandler(xerror);
 		XUngrabServer(dpy);
@@ -87,7 +87,7 @@ movemouse(const Arg *arg)
 	XEvent ev;
 	Time lasttime = 0;
 
-	if (!(c = selmon->sel))
+	if (!(c = selmon->tagview->active_client))
 		return;
 	if (c->isfullscreen) /* no support moving fullscreen windows by mouse */
 		return;
@@ -153,7 +153,7 @@ resizemouse(const Arg *arg)
 	XEvent ev;
 	Time lasttime = 0;
 
-	if (!(c = selmon->sel))
+	if (!(c = selmon->tagview->active_client))
 		return;
 	if (c->isfullscreen) /* no support resizing fullscreen windows by mouse */
 		return;
@@ -208,10 +208,10 @@ setlayout(const Arg *arg)
 	if (arg && arg->v)
 		selmon->lt[selmon->sellt] = (Layout *)arg->v;
 	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
-	if (selmon->sel)
+	if (selmon->tagview->active_client)
 		arrange(selmon);
 	else
-		drawbar(selmon);
+		bar_draw(selmon);
 }
 
 /* arg > 1.0 will set mfact absolutely */
@@ -254,47 +254,85 @@ spawn(const Arg *arg)
 void
 tag(const Arg *arg)
 {
-	if (selmon->sel && arg->ui & tag_mask) {
-		selmon->sel->tags = arg->ui & tag_mask;
+#if 0
+// The whole tag thing is from dwm, now obsolete. Implement with
+// tagview instead! If there really is a need for a client to have
+// more than one tag, just add a pointer in the client list of that
+// tag, pointing to the same Client. It might make sense to lose the
+// owneship of clients from tagviews, and have a list of clients at
+// the top-level. Tagview would then reference Clients from that
+// list. Having a top-level reference to the active_client could maybe
+// be useful, although tagviews still need to remember which client of
+// theirs is the active one, so they can focus it when they themselves
+// come in focus.
+	if (selmon->tagview->active_client && arg->ui & tag_mask) {
+		selmon->tagview->active_client->tags = arg->ui & tag_mask;
 		focus(NULL);
 		arrange(selmon);
 	}
+#endif
 }
 
+// Purpose: move the selected client to next monitor. From dwm, now
+// obsolete. Functionality covered by sending client to tagview. Possible future
+// implementation TODO: send active client to other monitor, effectively putting
+// it in the current tagview of that monitor.
 void
 tagmon(const Arg *arg)
 {
-	if (!selmon->sel || !mons->next)
+#if 0
+	if (!selmon->tagview->active_client || !mons->next)
 		return;
-	sendmon(selmon->sel, dirtomon(arg->i));
+	sendmon(selmon->tagview->active_client, dirtomon(arg->i));
+#endif
 }
 
 void
 togglebar(const Arg *arg)
 {
+#if BAR
+	// Legacy from dwm
 	selmon->showbar = !selmon->showbar;
 	updatebarpos(selmon);
 	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by, selmon->ww, bh);
 	arrange(selmon);
+#endif
 }
 
 void
 togglefloating(const Arg *arg)
 {
-	if (!selmon->sel)
+#if 0
+	// From dwm , now obsolete. There isn't going to be a floating layout,
+	// floating windows will be in an overlay layer, atop other non-floating
+	// windows.
+	if (!selmon->tagview->active_client)
 		return;
-	if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
+	if (selmon->tagview->active_client->isfullscreen) {
+		/* no support for fullscreen windows */
 		return;
-	selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
-	if (selmon->sel->isfloating)
-		resize(selmon->sel, selmon->sel->x, selmon->sel->y,
-		       selmon->sel->w, selmon->sel->h, 0);
+	}
+	selmon->tagview->active_client->isfloating =
+		!selmon->tagview->active_client->isfloating
+		|| selmon->tagview->active_client->isfixed;
+	if (selmon->tagview->active_client->isfloating) {
+		resize(
+			selmon->tagview->active_client,
+			selmon->tagview->active_client->x,
+			selmon->tagview->active_client->y,
+			selmon->tagview->active_client->w,
+			selmon->tagview->active_client->h,
+			0);
+	}
 	arrange(selmon);
+#endif
 }
 
 void
 toggletag(const Arg *arg)
 {
+#if 0
+	// From dwm, now obsolete. Toggling tags with... the mouse??
 	unsigned int newtags;
 
 	if (!selmon->sel)
@@ -305,6 +343,7 @@ toggletag(const Arg *arg)
 		focus(NULL);
 		arrange(selmon);
 	}
+#endif
 }
 
 void
@@ -334,32 +373,32 @@ view(const Arg *arg)
 void
 zoom(const Arg *arg)
 {
-	Client *c = selmon->sel;
+	Client *c = tagview_selected_client_get(selmon->tagview);
 
-	if (!selmon->lt[selmon->sellt]->arrange
-	    || (selmon->sel && selmon->sel->isfloating))
+	if (c == NULL) {
 		return;
-	if (c == nexttiled(selmon->clients))
-		if (!c || !(c = nexttiled(c->next)))
-			return;
+	}
+
+	if ((selmon->tagview->arrange == NULL)
+	    || (selmon->tagview
+		&& selmon->tagview->active_client
+		&& selmon->tagview->active_client->isfloating)
+		) {
+		return;
+	}
+
 	pop(c);
 }
 
 //******************************************************************************
 // Internal functions
 //******************************************************************************
-static Monitor *
+static struct Monitor *
 dirtomon(int dir)
 {
-	Monitor *m = NULL;
-
 	if (dir > 0) {
-		if (!(m = selmon->next))
-			m = mons;
-	} else if (selmon == mons) {
-		for (m = mons; m->next; m = m->next);
+		return list_next_select(&mons);
 	} else {
-		for (m = mons; m->next != selmon; m = m->next);
+		return list_prev_select(&mons);
 	}
-	return m;
 }

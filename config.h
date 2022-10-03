@@ -1,11 +1,15 @@
 /* See LICENSE file for copyright and license details. */
 /* This file defines much data, it should be a .c file rather then .h */
-
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include "client.h"
 #include "input.h"
+#include "layout.h"
 #include "ui.h"
 #include "util.h"
+
+#define LAYOUT_DEFAULT layout_two_cols_arrange
 
 /* appearance */
 extern const unsigned int borderpx;      /* border pixel of windows */
@@ -20,7 +24,8 @@ extern const char *colors[][3];
 extern const int num_colors;
 
 /* tagging */
-extern const char *tags[];
+#define NUMBER_OF_TAGS 10
+extern const char *tags[NUMBER_OF_TAGS];
 extern const int num_tags;
 extern const unsigned int tag_mask;
 
@@ -51,3 +56,5 @@ extern const int num_keys;
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 extern Button buttons[];
 extern const int num_buttons;
+
+#endif

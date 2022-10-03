@@ -21,13 +21,6 @@ necessary as root):
 
 Running dwm
 -----------
-Add the following line to your .xinitrc to start dwm using startx:
-
-    unset XDG_RUNTIME_DIR && exec dwm
-
-Unsetting `XDG_RUNTIME_DIR` allows running two X sessions in different tty at
-the same time. This is useful while developing.
-
 In order to connect dwm to a specific display, make sure that
 the DISPLAY environment variable is set correctly, e.g.:
 
@@ -44,6 +37,24 @@ like this in your .xinitrc:
     done &
     exec dwm
 
+Debugging
+---------
+You can run owm in a VT (your usual environment), and have its DISPLAY set to
+another VT
+
+In .xinitrc:
+```
+unset XDG_RUNTIME_DIR && xhost +local: && sleep 120
+```
+(untested: replace the `sleep` with `tail -f /dev/null`, to avoid timing out.)
+
+Then run `startx` from another VT.
+
+From your usual environment, you can now run owm with gdb:
+
+```
+DISPLAY=:1 gdb ./dwm
+```
 
 Configuration
 -------------

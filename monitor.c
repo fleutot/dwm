@@ -1,5 +1,6 @@
 #include <X11/Xlib.h>
 
+#include "bar.h"
 #include "drw.h"
 #include "dwm.h"
 #include "client.h"
@@ -18,30 +19,80 @@
 //******************************************************************************
 // Function prototypes
 //******************************************************************************
-static void arrangemon(Monitor *m);
-static int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 
 //******************************************************************************
 // Function definitions
 //******************************************************************************
+int area_in_mon(int x, int y, int w, int h, const Monitor *m)
+{
+	return
+		MAX(
+			0,
+			MIN(x + w, m->wx + m->ww) - MAX(x, m->wx)
+		)
+		* MAX(
+			0,
+			MIN(y + h, m->wy + m->wh) - MAX(y, m->wy)
+		);
+}
+
 void
 arrange(Monitor *m)
 {
-	if (m)
-		showhide(m->stack);
-	else for (m = mons; m; m = m->next)
-			showhide(m->stack);
 	if (m) {
-		arrangemon(m);
+		tagview_arrange(m);
 		restack(m);
 	} else {
-		for (m = mons; m; m = m->next)
-			arrangemon(m);
+		printf("%s with argument NULL\n", __func__);
 	}
 }
 
+static void
+configure_client_w_changes(void *client, void *storage)
+{
+	struct Client *c = (struct Client *) client;
+	XWindowChanges *win_changes = (XWindowChanges *) storage;
+
+	if (c->isfloating) {
+		return;
+	}
+
+	XConfigureWindow(
+		dpy,
+		c->win,
+		CWSibling|CWStackMode,
+		win_changes);
+
+	win_changes->sibling = c->win;
+}
+
+void
+restack(struct Monitor *m)
+{
+	Client *c;
+	XEvent ev;
+	XWindowChanges win_changes;
+
+	bar_draw(m);
+	c = tagview_selected_client_get(m->tagview);
+	if (c == NULL)
+		return;
+	if (c->isfloating || (m->tagview->arrange == NULL))
+		XRaiseWindow(dpy, c->win);
+	if (m->tagview->arrange != NULL) {
+		win_changes.stack_mode = Below;
+		win_changes.sibling = m->barwin;
+		list_run_for_all(
+			&m->tagview->clients,
+			configure_client_w_changes,
+			&win_changes);
+	}
+	XSync(dpy, False);
+	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+}
+
 Monitor *
-createmon(void)
+createmon(struct tagview *with_tagview)
 {
 	Monitor *m;
 
@@ -51,132 +102,46 @@ createmon(void)
 	m->nmaster = nmaster;
 	m->showbar = showbar;
 	m->topbar = topbar;
-	m->lt[0] = &layouts[0];
-	m->lt[1] = &layouts[1 % num_layouts];
+	m->tagview = with_tagview;
+	//m->clients = LIST_EMPTY;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
 }
 
-void
-drawbar(Monitor *m)
+void monitor_destruct(struct Monitor *m)
 {
-	int x, w, tw = 0;
-	int boxs = drw->fonts->h / 9;
-	int boxw = drw->fonts->h / 6 + 2;
-	unsigned int i, occ = 0, urg = 0;
-	Client *c;
-
-	/* draw status first so it can be overdrawn by tags later */
-	if (m == selmon) {                                 /* status is only drawn on selected monitor */
-		drw_setscheme(drw, scheme[SchemeNorm]);
-		tw = drw_fontset_getwidth(drw, stext) + 2; /* 2px right padding */
-		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
-	}
-
-	for (c = m->clients; c; c = c->next) {
-		occ |= c->tags;
-		if (c->isurgent)
-			urg |= c->tags;
-	}
-	x = 0;
-	for (i = 0; i < num_tags; i++) {
-		w = drw_fontset_getwidth(drw, tags[i]) + lrpad;
-		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
-		if (occ & 1 << i)
-			drw_rect(drw, x + boxs, boxs, boxw, boxw,
-				 m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
-				 urg & 1 << i);
-		x += w;
-	}
-	w = blw = drw_fontset_getwidth(drw, m->ltsymbol) + lrpad;
-	drw_setscheme(drw, scheme[SchemeNorm]);
-	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
-
-	if ((w = m->ww - tw - x) > bh) {
-		if (m->sel) {
-			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
-			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
-			if (m->sel->isfloating)
-				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
-		} else {
-			drw_setscheme(drw, scheme[SchemeNorm]);
-			drw_rect(drw, x, 0, w, bh, 1, 1);
-		}
-	}
-	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
-}
-
-Client *
-nexttiled(Client *c)
-{
-	for (; c && (c->isfloating || !isvisible(c)); c = c->next);
-	return c;
-}
-
-Monitor *
-recttomon(int x, int y, int w, int h)
-{
-	Monitor *m, *ret = selmon;
-	int a, area = 0;
-
-	for (m = mons; m; m = m->next)
-		if ((a = area_in_mon(x, y, w, h, m)) > area) {
-			area = a;
-			ret = m;
-		}
-	return ret;
+#if BAR
+	XUnmapWindow(dpy, mon->barwin);
+	XDestroyWindow(dpy, mon->barwin);
+#endif
+	free(m);
 }
 
 void
 tile(Monitor *m)
 {
-	unsigned int i, n, h, mw, my, ty;
-	Client *c;
-
-	for (n = 0, c = nexttiled(m->clients);
-	     c != NULL;
-	     c = nexttiled(c->next), n++)
-		;
-
-	if (n == 0)
-		return;
-
-	if (n > m->nmaster)
-		mw = m->nmaster ? m->ww * m->mfact : 0;
-	else
-		mw = m->ww;
-
-	for (i = my = ty = 0, c = nexttiled(m->clients);
-	     c != NULL;
-	     c = nexttiled(c->next), i++)
-		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i);
-			resize(c, m->wx, m->wy + my, mw - (2 * c->bw),
-			       h - (2 * c->bw), 0);
-			if (my + height(c) < m->wh)
-				my += height(c);
-		} else {
-			h = (m->wh - ty) / (n - i);
-			resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2 * c->bw), h - (2 * c->bw), 0);
-			if (ty + height(c) < m->wh)
-				ty += height(c);
-		}
+	// Arranging windows on a monitor moved to the layouts. This
+	// one to layout_two_cols.c.
 }
 
 void
 monocle(Monitor *m)
 {
+#if 0
+	This must move (and be fixed) to layout/layout_fullscreen.c, when it exists.
 	unsigned int n = 0;
-	Client *c;
+	struct ll_node *node;
 
-	for (c = m->clients; c; c = c->next)
-		if (isvisible(c))
+	for (node = m->clients.head; node; node = node->next)
+		if (isvisible(node->data))
 			n++;
 	if (n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
-	for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
+	for (node = nexttiled(m->clients.head); node; node = nexttiled(node->next)) {
+		Client *c = node->data;
 		resize(c, m->wx, m->wy, m->ww - 2 * c->bw, m->wh - 2 * c->bw, 0);
+	}
+#endif
 }
 
 void
@@ -185,34 +150,14 @@ updatebarpos(Monitor *m)
 	m->wy = m->my;
 	m->wh = m->mh;
 	if (m->showbar) {
-		m->wh -= bh;
+		m->wh -= bar_h;
 		m->by = m->topbar ? m->wy : m->wy + m->wh;
-		m->wy = m->topbar ? m->wy + bh : m->wy;
+		m->wy = m->topbar ? m->wy + bar_h : m->wy;
 	} else {
-		m->by = -bh;
+		m->by = -bar_h;
 	}
 }
 
 //******************************************************************************
 // Internal functions
 //******************************************************************************
-static void
-arrangemon(Monitor *m)
-{
-	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, sizeof m->ltsymbol);
-	if (m->lt[m->sellt]->arrange)
-		m->lt[m->sellt]->arrange(m);
-}
-
-static int area_in_mon(int x, int y, int w, int h, const Monitor *m)
-{
-	return
-		MAX(
-		0,
-		MIN(x + w, m->wx + m->ww) - MAX(x, m->wx)
-		)
-		* MAX(
-		0,
-		MIN(y + h, m->wy + m->wh) - MAX(y, m->wy)
-		);
-}
