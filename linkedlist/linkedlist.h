@@ -26,6 +26,9 @@ struct ll_node {
 struct linkedlist {
     int size;
     struct ll_node *head;
+    // An ll_node* is maybe not very interesting, would pointer to the
+    // selected *data be more interesting? A pointer to the ll_node is
+    // nice, to add a new client to the list.
     struct ll_node *selected;
 };
 
@@ -82,6 +85,9 @@ void linkedlist_destroy(struct linkedlist *l);
 //  ----------------------------------------------------------------------------
 void linkedlist_run_for_all(struct linkedlist *l,
                             void (*callback)(void *data));
+
+void *linkedlist_find(struct linkedlist *l,
+    bool (*callback)(void *data));
 
 void linkedlist_next_select(struct linkedlist *l);
 void *linkedlist_selected_data_get(struct linkedlist *l);

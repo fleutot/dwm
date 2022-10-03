@@ -10,6 +10,7 @@ SRC = \
 	dwm.c \
 	linkedlist/linkedlist.c \
 	monitor.c \
+	tagview.c \
 	ui.c \
 	util.c
 

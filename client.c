@@ -61,6 +61,14 @@ resizeclient(Client *c, int x, int y, int w, int h)
 	XSync(dpy, False);
 }
 
+
+// Since all clients were owned by a monitor, this showed or hid the
+// clients depending on the visibility, which was determined by tags
+// for any client. The new way to do this is with tagviews, so this
+// show hide is not necessary, we just need to show all clients in the
+// tagview. Hiding is possibly going to be needed as well, or just
+// hide everything (or hide all clients in the tagview we're leaving)
+// and start showing the clients of the tagview.
 void
 showhide(Client *c)
 {
@@ -69,7 +77,8 @@ showhide(Client *c)
 	if (isvisible(c)) {
 		/* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
-		if ((!c->mon->lt[c->mon->sellt]->arrange || c->isfloating) && !c->isfullscreen)
+		if ((!c->mon->tagview->layout->arrange || c->isfloating)
+		    && !c->isfullscreen)
 			resize(c, c->x, c->y, c->w, c->h, 0);
 		showhide(c->snext);
 	} else {
@@ -126,7 +135,7 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		*h = bh;
 	if (*w < bh)
 		*w = bh;
-	if (resizehints || c->isfloating || !c->mon->lt[c->mon->sellt]->arrange) {
+	if (resizehints || c->isfloating || !c->mon->tagview->layout->arrange) {
 		/* see last two sentences in ICCCM 4.1.2.3 */
 		baseismin = c->basew == c->minw && c->baseh == c->minh;
 		if (!baseismin) { /* temporarily remove base dimensions */

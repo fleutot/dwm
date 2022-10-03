@@ -43,27 +43,28 @@
 #include <X11/Xft/Xft.h>
 
 #include "dwm.h"
+
 #include "client.h"
 #include "drw.h"
 #include "monitor.h"
+#include "tagview.h"
 #include "util.h"
 
 /* macros */
-#define CLEANMASK(mask)         (mask & ~(numlockmask | LockMask) & (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask))
-#define INTERSECT(x, y, w, h, m)    (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) \
+#define CLEANMASK(mask)	    (mask & ~(numlockmask | LockMask) & (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask))
+#define INTERSECT(x, y, w, h, m)	 (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) \
 				     * MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
-#define TAGMASK                 ((1 << num_tags) - 1)
+#define TAGMASK		    ((1 << num_tags) - 1)
 
 /* enums */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
-       NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-       NetWMWindowTypeDialog, NetClientList, NetLast };         /* EWMH atoms */
+	NetWMFullscreen, NetActiveWindow, NetWMWindowType,
+	NetWMWindowTypeDialog, NetClientList, NetLast };		 /* EWMH atoms */
 
 /* function declarations */
 static void applyrules(Client *c);
 static void attach(Client *c);
 static void attachabove(Client *c);
-static void attachstack(Client *c);
 static void buttonpress(const XEvent *e);
 static void checkotherwm(void);
 static void cleanup(void);
@@ -73,7 +74,6 @@ static void configurenotify(const XEvent *e);
 static void configurerequest(const XEvent *e);
 static void destroynotify(const XEvent *e);
 static void detach(Client *c);
-static void detachstack(Client *c);
 static void drawbars(void);
 static void enternotify(const XEvent *e);
 static void expose(const XEvent *e);
@@ -141,12 +141,12 @@ Display *dpy;
 Drw *drw;
 Monitor *mons, *selmon;
 Atom wmatom[WMLast];
-int lrpad;               /* sum of left and right padding for text */
+int lrpad;		    /* sum of left and right padding for text */
 Window root;
 Clr **scheme;
 char stext[256];
-int sw, sh;              /* X display screen geometry width, height */
-int bh, blw = 0;         /* bar geometry */
+int sw, sh;		    /* X display screen geometry width, height */
+int bh, blw = 0;	    /* bar geometry */
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -190,30 +190,19 @@ applyrules(Client *c)
 void
 attach(Client *c)
 {
-	c->next = c->mon->clients;
-	c->mon->clients = c;
+	tagview_prepend_client(c->mon->tagview, c);
 }
 
 void
 attachabove(Client *c)
 {
-	if (c->mon->sel == NULL || c->mon->sel == c->mon->clients || c->mon->sel->isfloating) {
-		attach(c);
-		return;
+	Client *selected_client = tagview_selected_client_get(c->mon->tagview);
+
+	if (selected_client == NULL || selected_client->isfloating) {
+		tagview_prepend_client(c->mon->tagview, c);
+	} else {
+		tagview_add_client(c->mon->tagview, c);
 	}
-
-	Client *at;
-
-	for (at = c->mon->clients; at->next != c->mon->sel; at = at->next);
-	c->next = at->next;
-	at->next = c;
-}
-
-void
-attachstack(Client *c)
-{
-	c->snext = c->mon->stack;
-	c->mon->stack = c;
 }
 
 void
@@ -228,7 +217,7 @@ buttonpress(const XEvent *e)
 	click = ClkRootWin;
 	/* focus monitor if necessary */
 	if ((m = wintomon(ev->window)) && m != selmon) {
-		unfocus(selmon->sel, 1);
+		unfocus(tagview_selected_client_get(selmon->tagview), 1);
 		selmon = m;
 		focus(NULL);
 	}
@@ -250,7 +239,6 @@ buttonpress(const XEvent *e)
 		}
 	} else if ((c = wintoclient(ev->window))) {
 		focus(c);
-		restack(selmon);
 		XAllowEvents(dpy, ReplayPointer, CurrentTime);
 		click = ClkClientWin;
 	}
@@ -276,14 +264,10 @@ cleanup(void)
 {
 	Arg a = { .ui = ~0 };
 	Layout foo = { "", NULL };
-	Monitor *m;
 	size_t i;
 
 	view(&a);
 	selmon->lt[selmon->sellt] = &foo;
-	for (m = mons; m; m = m->next)
-		while (m->stack)
-			unmanage(m->stack, 0);
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
 	while (mons)
 		cleanupmon(mons);
@@ -328,7 +312,7 @@ clientmessage(const XEvent *e)
 			setfullscreen(c, (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD    */
 					  || (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
 	} else if (cme->message_type == netatom[NetActiveWindow]) {
-		if (c != selmon->sel && !c->isurgent)
+		if (c != tagview_selected_client_get(selmon->tagview) && !c->isurgent)
 			seturgent(c, 1);
 	}
 }
@@ -337,7 +321,6 @@ void
 configurenotify(const XEvent *e)
 {
 	Monitor *m;
-	Client *c;
 	const XConfigureEvent *ev = &e->xconfigure;
 	int dirty;
 
@@ -350,9 +333,13 @@ configurenotify(const XEvent *e)
 			drw_resize(drw, sw, bh);
 			updatebars();
 			for (m = mons; m; m = m->next) {
-				for (c = m->clients; c; c = c->next)
+				for (struct ll_node *node = m->tagview->clients.head;
+				     node;
+				     node = node->next) {
+					Client *c = node->data;
 					if (c->isfullscreen)
 						resizeclient(c, m->mx, m->my, m->mw, m->mh);
+				}
 				XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
 			}
 			focus(NULL);
@@ -427,24 +414,7 @@ destroynotify(const XEvent *e)
 void
 detach(Client *c)
 {
-	Client **tc;
-
-	for (tc = &c->mon->clients; *tc && *tc != c; tc = &(*tc)->next);
-	*tc = c->next;
-}
-
-void
-detachstack(Client *c)
-{
-	Client **tc, *t;
-
-	for (tc = &c->mon->stack; *tc && *tc != c; tc = &(*tc)->snext);
-	*tc = c->snext;
-
-	if (c == c->mon->sel) {
-		for (t = c->mon->stack; t && !isvisible(t); t = t->snext);
-		c->mon->sel = t;
-	}
+	linkedlist_rm(&c->mon->tagview->clients, c);
 }
 
 void
@@ -474,9 +444,9 @@ enternotify(const XEvent *e)
 	c = wintoclient(ev->window);
 	m = c ? c->mon : wintomon(ev->window);
 	if (m != selmon) {
-		unfocus(selmon->sel, 1);
+		unfocus(selmon->tagview->active_client, 1);
 		selmon = m;
-	} else if (!c || c == selmon->sel) {
+	} else if (!c || c == selmon->tagview->active_client) {
 		return;
 	}
 	focus(c);
@@ -495,17 +465,13 @@ expose(const XEvent *e)
 void
 focus(Client *c)
 {
-	if (!c || !isvisible(c))
-		for (c = selmon->stack; c && !isvisible(c); c = c->snext);
-	if (selmon->sel && selmon->sel != c)
-		unfocus(selmon->sel, 0);
+	if (selmon->tagview->active_client && selmon->tagview->active_client != c)
+		unfocus(selmon->tagview->active_client, 0);
 	if (c) {
 		if (c->mon != selmon)
 			selmon = c->mon;
 		if (c->isurgent)
 			seturgent(c, 0);
-		detachstack(c);
-		attachstack(c);
 		grabbuttons(c, 1);
 		XSetWindowBorder(dpy, c->win, scheme[SchemeSel][ColBorder].pixel);
 		setfocus(c);
@@ -513,7 +479,7 @@ focus(Client *c)
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
 	}
-	selmon->sel = c;
+	selmon->tagview->active_client = c;
 	drawbars();
 }
 
@@ -523,8 +489,8 @@ focusin(const XEvent *e)
 {
 	const XFocusChangeEvent *ev = &e->xfocus;
 
-	if (selmon->sel && ev->window != selmon->sel->win)
-		setfocus(selmon->sel);
+	if (selmon->tagview->active_client && ev->window != selmon->tagview->active_client->win)
+		setfocus(selmon->tagview->active_client);
 }
 
 Atom
@@ -664,6 +630,9 @@ keypress(const XEvent *e)
 			keys[i].func(&(keys[i].arg));
 }
 
+/*
+ * TODO: this function creates new client windows. Should move to client.c?
+ */
 void
 manage(Window w, XWindowAttributes *wa)
 {
@@ -713,14 +682,13 @@ manage(Window w, XWindowAttributes *wa)
 	if (c->isfloating)
 		XRaiseWindow(dpy, c->win);
 	attachabove(c);
-	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
 			(unsigned char *)&(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 	setclientstate(c, NormalState);
 	if (c->mon == selmon)
-		unfocus(selmon->sel, 0);
-	c->mon->sel = c;
+		unfocus(selmon->tagview->active_client, 0);
+	c->mon->tagview->active_client = c;
 	arrange(c->mon);
 	XMapWindow(dpy, c->win);
 	focus(NULL);
@@ -761,7 +729,7 @@ motionnotify(const XEvent *e)
 	if (ev->window != root)
 		return;
 	if ((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
-		unfocus(selmon->sel, 1);
+		unfocus(selmon->tagview->active_client, 1);
 		selmon = m;
 		focus(NULL);
 	}
@@ -806,37 +774,12 @@ propertynotify(const XEvent *e)
 		}
 		if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
 			updatetitle(c);
-			if (c == c->mon->sel)
+			if (c == c->mon->tagview->active_client)
 				drawbar(c->mon);
 		}
 		if (ev->atom == netatom[NetWMWindowType])
 			updatewindowtype(c);
 	}
-}
-
-void
-restack(Monitor *m)
-{
-	Client *c;
-	XEvent ev;
-	XWindowChanges wc;
-
-	drawbar(m);
-	if (!m->sel)
-		return;
-	if (m->sel->isfloating || !m->lt[m->sellt]->arrange)
-		XRaiseWindow(dpy, m->sel->win);
-	if (m->lt[m->sellt]->arrange) {
-		wc.stack_mode = Below;
-		wc.sibling = m->barwin;
-		for (c = m->stack; c; c = c->snext)
-			if (!c->isfloating && isvisible(c)) {
-				XConfigureWindow(dpy, c->win, CWSibling | CWStackMode, &wc);
-				wc.sibling = c->win;
-			}
-	}
-	XSync(dpy, False);
-	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
 
 void
@@ -885,11 +828,9 @@ sendmon(Client *c, Monitor *m)
 		return;
 	unfocus(c, 1);
 	detach(c);
-	detachstack(c);
 	c->mon = m;
 	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
 	attachabove(c);
-	attachstack(c);
 	focus(NULL);
 	arrange(NULL);
 }
@@ -1080,7 +1021,6 @@ unmanage(Client *c, int destroyed)
 	XWindowChanges wc;
 
 	detach(c);
-	detachstack(c);
 	if (!destroyed) {
 		wc.border_width = c->oldbw;
 		XGrabServer(dpy);                                       /* avoid race conditions */
@@ -1136,18 +1076,20 @@ updatebars(void)
 }
 
 
+static void
+client_list_update(void *data)
+{
+	struct Client *c = (struct Client *) data;
+	XChangeProperty(dpy, root, netatom[NetClientList],
+			XA_WINDOW, 32, PropModeAppend,
+			(unsigned char *)&(c->win), 1);
+}
+
 void
 updateclientlist()
 {
-	Client *c;
-	Monitor *m;
-
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
-	for (m = mons; m; m = m->next)
-		for (c = m->clients; c; c = c->next)
-			XChangeProperty(dpy, root, netatom[NetClientList],
-					XA_WINDOW, 32, PropModeAppend,
-					(unsigned char *)&(c->win), 1);
+	tagview_run_for_all_tv_all_clients(client_list_update);
 }
 
 int
@@ -1158,7 +1100,6 @@ updategeom(void)
 #ifdef XINERAMA
 	if (XineramaIsActive(dpy)) {
 		int i, j, n, nn;
-		Client *c;
 		Monitor *m;
 		XineramaScreenInfo *info = XineramaQueryScreens(dpy, &nn);
 		XineramaScreenInfo *unique = NULL;
@@ -1193,17 +1134,22 @@ updategeom(void)
 				}
 		} else { /* less monitors available nn < n */
 			for (i = nn; i < n; i++) {
+				// This sends clients of monitors to
+				// the first monitor, for the monitors
+				// that not longer are there. I don't
+				// have to do that anymore, since
+				// clients are in tagviews.
+				#if 0
 				for (m = mons; m && m->next; m = m->next);
 				while ((c = m->clients)) {
 					dirty = 1;
 					m->clients = c->next;
-					detachstack(c);
 					c->mon = mons;
 					attachabove(c);
-					attachstack(c);
 				}
 				if (m == selmon)
 					selmon = mons;
+				#endif
 				cleanupmon(m);
 			}
 		}
@@ -1326,7 +1272,7 @@ updatewmhints(Client *c)
 	XWMHints *wmh;
 
 	if ((wmh = XGetWMHints(dpy, c->win))) {
-		if (c == selmon->sel && wmh->flags & XUrgencyHint) {
+		if (c == selmon->tagview->active_client && wmh->flags & XUrgencyHint) {
 			wmh->flags &= ~XUrgencyHint;
 			XSetWMHints(dpy, c->win, wmh);
 		} else {
@@ -1343,14 +1289,7 @@ updatewmhints(Client *c)
 Client *
 wintoclient(Window w)
 {
-	Client *c;
-	Monitor *m;
-
-	for (m = mons; m; m = m->next)
-		for (c = m->clients; c; c = c->next)
-			if (c->win == w)
-				return c;
-	return NULL;
+	return tagview_find_window_client(w);
 }
 
 Monitor *

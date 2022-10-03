@@ -31,7 +31,7 @@ const char *colors[][3] = {
 const int num_colors = LENGTH(colors);
 
 /* tagging */
-const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+const char *tags[NUMBER_OF_TAGS] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 const int num_tags = LENGTH(tags);

@@ -27,10 +27,6 @@ static int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 void
 arrange(Monitor *m)
 {
-	if (m)
-		showhide(m->stack);
-	else for (m = mons; m; m = m->next)
-			showhide(m->stack);
 	if (m) {
 		arrangemon(m);
 		restack(m);
@@ -53,6 +49,8 @@ createmon(void)
 	m->topbar = topbar;
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1 % num_layouts];
+	m->tagview = NULL;
+	//m->clients = LINKEDLIST_EMPTY;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
 }
@@ -60,11 +58,12 @@ createmon(void)
 void
 drawbar(Monitor *m)
 {
+#if 0
+	I don't care for bars, so this doesn't get reimplemented. At least not yet.
 	int x, w, tw = 0;
 	int boxs = drw->fonts->h / 9;
 	int boxw = drw->fonts->h / 6 + 2;
 	unsigned int i, occ = 0, urg = 0;
-	Client *c;
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) {                                 /* status is only drawn on selected monitor */
@@ -73,10 +72,18 @@ drawbar(Monitor *m)
 		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
 	}
 
-	for (c = m->clients; c; c = c->next) {
+	// TODO: what is occ? occurence? Occupancy? Like a bit set in occ means
+	// there is at least one client with that tag?
+	// This wil change, when moving to tagviews as a separate struct. A
+	// tabview holds a list of  clients, and so knows the number of clients in
+	// that tag.
+	// For now, just hack into the new linkedlist.
+	for (struct ll_node *n = m->clients.head; n; n = n->next) {
+		Client *c = n->data;
 		occ |= c->tags;
 		if (c->isurgent)
 			urg |= c->tags;
+
 	}
 	x = 0;
 	for (i = 0; i < num_tags; i++) {
@@ -105,13 +112,19 @@ drawbar(Monitor *m)
 		}
 	}
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
+#endif
 }
 
-Client *
-nexttiled(Client *c)
+struct ll_node *
+nexttiled(struct ll_node *n)
 {
-	for (; c && (c->isfloating || !isvisible(c)); c = c->next);
-	return c;
+	Client *c = n->data;
+
+	while (n && (c->isfloating || !isvisible(c))) {
+		n = n->next;
+		c = n->data;
+	}
+	return n;
 }
 
 Monitor *
@@ -131,52 +144,28 @@ recttomon(int x, int y, int w, int h)
 void
 tile(Monitor *m)
 {
-	unsigned int i, n, h, mw, my, ty;
-	Client *c;
-
-	for (n = 0, c = nexttiled(m->clients);
-	     c != NULL;
-	     c = nexttiled(c->next), n++)
-		;
-
-	if (n == 0)
-		return;
-
-	if (n > m->nmaster)
-		mw = m->nmaster ? m->ww * m->mfact : 0;
-	else
-		mw = m->ww;
-
-	for (i = my = ty = 0, c = nexttiled(m->clients);
-	     c != NULL;
-	     c = nexttiled(c->next), i++)
-		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i);
-			resize(c, m->wx, m->wy + my, mw - (2 * c->bw),
-			       h - (2 * c->bw), 0);
-			if (my + height(c) < m->wh)
-				my += height(c);
-		} else {
-			h = (m->wh - ty) / (n - i);
-			resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2 * c->bw), h - (2 * c->bw), 0);
-			if (ty + height(c) < m->wh)
-				ty += height(c);
-		}
+	// Arranging windows on a monitor moved to the layouts. This
+	// one to layout_two_cols.c.
 }
 
 void
 monocle(Monitor *m)
 {
+#if 0
+	This must move (and be fixed) to layout/layout_fullscreen.c, when it exists.
 	unsigned int n = 0;
-	Client *c;
+	struct ll_node *node;
 
-	for (c = m->clients; c; c = c->next)
-		if (isvisible(c))
+	for (node = m->clients.head; node; node = node->next)
+		if (isvisible(node->data))
 			n++;
 	if (n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
-	for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
+	for (node = nexttiled(m->clients.head); node; node = nexttiled(node->next)) {
+		Client *c = node->data;
 		resize(c, m->wx, m->wy, m->ww - 2 * c->bw, m->wh - 2 * c->bw, 0);
+	}
+#endif
 }
 
 void
@@ -197,10 +186,10 @@ updatebarpos(Monitor *m)
 // Internal functions
 //******************************************************************************
 static void
-arrangemon(Monitor *m)
+arrangemon(struct Monitor *m)
 {
-	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, sizeof m->ltsymbol);
-	if (m->lt[m->sellt]->arrange)
+    tagview_arrange(m);
+    if (m->tagview->arrange)
 		m->lt[m->sellt]->arrange(m);
 }
 
