@@ -7,6 +7,9 @@ struct layout_cfg_two_cols {
 	//Win selected_window; // TODO: should be a client instead? An index?
 };
 
+
+#include "monitor.h"
+
 // This prototype must match for all layouts, see struct tagview, and the
 // function pointer type layout_arrange_function_t.
 void layout_two_cols_arrange(void *layout_cfg, const struct Monitor *mon);

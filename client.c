@@ -113,10 +113,10 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 	*w = MAX(1, *w);
 	*h = MAX(1, *h);
 	if (interact) {
-		if (*x > sw)
-			*x = sw - width(c);
-		if (*y > sh)
-			*y = sh - height(c);
+		if (*x > screen_w)
+			*x = screen_w - width(c);
+		if (*y > screen_h)
+			*y = screen_h - height(c);
 		if (*x + *w + 2 * c->bw < 0)
 			*x = 0;
 		if (*y + *h + 2 * c->bw < 0)
@@ -131,10 +131,10 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		if (*y + *h + 2 * c->bw <= m->wy)
 			*y = m->wy;
 	}
-	if (*h < bh)
-		*h = bh;
-	if (*w < bh)
-		*w = bh;
+	if (*h < bar_h)
+		*h = bar_h;
+	if (*w < bar_h)
+		*w = bar_h;
 	if (resizehints || c->isfloating || !c->mon->tagview->layout->arrange) {
 		/* see last two sentences in ICCCM 4.1.2.3 */
 		baseismin = c->basew == c->minw && c->baseh == c->minh;

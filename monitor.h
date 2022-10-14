@@ -17,7 +17,8 @@ struct Monitor {
 	char         ltsymbol[16]; // TODO: move to tagview
 	float        mfact; // TODO: move to tagview
 	int          nmaster; // TODO: move to tagview
-	int          num; // What is this?
+	int          num; // This seems to be the "name" or "ID" of
+                         // that monitor
 	int          by;             /* bar geometry */
 	int          mx, my, mw, mh; /* screen size */
 	int          wx, wy, ww, wh; /* window area  */
@@ -27,23 +28,23 @@ struct Monitor {
 	int          showbar;
 	int          topbar;
 	struct tagview *tagview;
-	// struct linkedlist clients;
+	// struct list clients;
 	// Client       *sel;
 	//Client       *stack;
-	Monitor      *next;
+	//Monitor      *next;
 	Window       barwin;
 	const struct layout *lt[2]; // TODO: move to tagview
 };
 
+int area_in_mon(int x, int y, int w, int h, const Monitor *m);
+
 void arrange(Monitor *m);
 
-Monitor *createmon(void);
+void restack(Monitor *m);
 
-void drawbar(Monitor *m);
+Monitor *createmon(struct tagview *with_tagview);
 
-struct ll_node *nexttiled(struct ll_node *n);
-
-Monitor *recttomon(int x, int y, int w, int h);
+void monitor_destruct(struct Monitor *m);
 
 void tile(Monitor *m);
 

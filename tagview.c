@@ -22,9 +22,9 @@ void tagview_init(void)
 {
 	for (int i = 0; i < LENGTH(tags); i++) {
 		tagviews[i] = (struct tagview) {
-                  .arrange = layout_two_cols_arrange,
+                  .arrange = LAYOUT_DEFAULT,
                   .layout_cfg = &tagviews[i].layout_cfg_two_cols,
-                  .clients = LINKEDLIST_EMPTY,
+                  .clients = LIST_EMPTY,
                   .active_client = NULL,
                   .layout_cfg_two_cols = (struct layout_cfg_two_cols) {
                       .n_master = 1,
@@ -56,42 +56,56 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout)
 
 void tagview_add_client(struct tagview *t, Client *c)
 {
-	linkedlist_add_before(&t->clients, &t->active_client, c);
-	t->clients.selected->data = c;
+	list_add_before(&t->clients, &t->active_client, c);
+	list_select(&t->clients, c);
 }
 
 void tagview_prepend_client(struct tagview *t, Client *c)
 {
-	linkedlist_prepend(&t->clients, c);
-	t->clients.selected->data = c;
+	list_prepend(&t->clients, c);
+	list_select(&t->clients, c);
+}
+
+Client *tagview_next_client_select(struct tagview *t)
+{
+    t->active_client = list_next_select(&t->clients);
+    return t->active_client;
+}
+
+Client *tagview_prev_client_select(struct tagview *t)
+{
+    t->active_client = list_prev_select(&t->clients);
+    return t->active_client;
 }
 
 Client *tagview_selected_client_get(struct tagview *t)
 {
-	return (Client *) t->clients.selected->data;
+	return (Client *) list_selected_data_get(&t->clients);
 }
 
-void tagview_run_for_all_tv_all_clients(void (*callback)(void *))
+void tagview_run_for_all_tv_all_clients(
+    void (*callback)(void *data, void *storage))
 {
 	for (int i = 0; i < LENGTH(tags); i++) {
-           linkedlist_run_for_all(&tagviews[i].clients, callback);
+           list_run_for_all(&tagviews[i].clients, callback, NULL);
        }
 }
 
-static Window window_to_find;
-static bool window_to_find_is_client(void *c)
+static bool window_to_find_is_client(void *c, void *w)
 {
-	return ((struct Client *)c)->win == window_to_find;
+	Window *window_to_find = (Window *) w;
+	return ((struct Client *)c)->win == *window_to_find;
 }
-struct Client *tagview_find_window_client(Window w)
+struct Client *tagview_find_window_client(Window *w)
 {
 	struct Client *c = NULL;
-	window_to_find = w;
+	Window *window_to_find = w;
 
 	for (int i = 0; i < LENGTH(tagviews); i++) {
-		c = linkedlist_find(
+		c = list_find(
 			&tagviews[i].clients,
-			window_to_find_is_client);
+			window_to_find_is_client,
+			window_to_find);
 		if (c != NULL) {
 			return c;
 		}
@@ -99,6 +113,10 @@ struct Client *tagview_find_window_client(Window w)
 	return NULL;
 }
 
+struct tagview *tagview_get(int index)
+{
+	return &tagviews[index];
+}
 //******************************************************************************
 // Internal functions
 //******************************************************************************

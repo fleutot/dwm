@@ -9,6 +9,8 @@
 #include "ui.h"
 #include "util.h"
 
+#define LAYOUT_DEFAULT layout_two_cols_arrange
+
 /* appearance */
 extern const unsigned int borderpx;      /* border pixel of windows */
 extern const unsigned int snap;          /* snap pixel */

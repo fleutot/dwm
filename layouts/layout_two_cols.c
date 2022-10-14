@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "layouts/layout_two_cols.h"
+#include "layout_two_cols.h"
 
 #include "monitor.h"
 
@@ -10,15 +10,15 @@ void layout_two_cols_arrange(void *layout_cfg, const struct Monitor *mon)
     printf("%s\n", __func__);
 
 #if 0
-    This code is from dwm's `void tile(Monitor *m)`, with some of my
-        modifications.
+    // This code is from dwm's `void tile(Monitor *m)`, with some of my
+    // modifications.
 
         	unsigned int i, n, h, mw, my, ty;
 	Client *c;
 
 	struct ll_node *node;
 
-	// TODO: this counts the number of clients. Do it in a struct linkedlist?
+	// TODO: this counts the number of clients. Do it in a struct list?
 	for (n = 0, node = nexttiled(m->clients.head);
 	     node != NULL;
 	     node = nexttiled(node->next), n++)

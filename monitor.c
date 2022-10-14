@@ -1,5 +1,6 @@
 #include <X11/Xlib.h>
 
+#include "bar.h"
 #include "drw.h"
 #include "dwm.h"
 #include "client.h"
@@ -18,26 +19,80 @@
 //******************************************************************************
 // Function prototypes
 //******************************************************************************
-static void arrangemon(Monitor *m);
-static int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 
 //******************************************************************************
 // Function definitions
 //******************************************************************************
+int area_in_mon(int x, int y, int w, int h, const Monitor *m)
+{
+	return
+		MAX(
+			0,
+			MIN(x + w, m->wx + m->ww) - MAX(x, m->wx)
+		)
+		* MAX(
+			0,
+			MIN(y + h, m->wy + m->wh) - MAX(y, m->wy)
+		);
+}
+
 void
 arrange(Monitor *m)
 {
 	if (m) {
-		arrangemon(m);
+		tagview_arrange(m);
 		restack(m);
 	} else {
-		for (m = mons; m; m = m->next)
-			arrangemon(m);
+		printf("%s with argument NULL\n", __func__);
 	}
 }
 
+static void
+configure_client_w_changes(void *client, void *storage)
+{
+	struct Client *c = (struct Client *) client;
+	XWindowChanges *win_changes = (XWindowChanges *) storage;
+
+	if (c->isfloating) {
+		return;
+	}
+
+	XConfigureWindow(
+		dpy,
+		c->win,
+		CWSibling|CWStackMode,
+		win_changes);
+
+	win_changes->sibling = c->win;
+}
+
+void
+restack(struct Monitor *m)
+{
+	Client *c;
+	XEvent ev;
+	XWindowChanges win_changes;
+
+	bar_draw(m);
+	c = tagview_selected_client_get(m->tagview);
+	if (c == NULL)
+		return;
+	if (c->isfloating || (m->tagview->arrange == NULL))
+		XRaiseWindow(dpy, c->win);
+	if (m->tagview->arrange != NULL) {
+		win_changes.stack_mode = Below;
+		win_changes.sibling = m->barwin;
+		list_run_for_all(
+			&m->tagview->clients,
+			configure_client_w_changes,
+			&win_changes);
+	}
+	XSync(dpy, False);
+	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+}
+
 Monitor *
-createmon(void)
+createmon(struct tagview *with_tagview)
 {
 	Monitor *m;
 
@@ -47,98 +102,19 @@ createmon(void)
 	m->nmaster = nmaster;
 	m->showbar = showbar;
 	m->topbar = topbar;
-	m->lt[0] = &layouts[0];
-	m->lt[1] = &layouts[1 % num_layouts];
-	m->tagview = NULL;
-	//m->clients = LINKEDLIST_EMPTY;
+	m->tagview = with_tagview;
+	//m->clients = LIST_EMPTY;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
 }
 
-void
-drawbar(Monitor *m)
+void monitor_destruct(struct Monitor *m)
 {
-#if 0
-	I don't care for bars, so this doesn't get reimplemented. At least not yet.
-	int x, w, tw = 0;
-	int boxs = drw->fonts->h / 9;
-	int boxw = drw->fonts->h / 6 + 2;
-	unsigned int i, occ = 0, urg = 0;
-
-	/* draw status first so it can be overdrawn by tags later */
-	if (m == selmon) {                                 /* status is only drawn on selected monitor */
-		drw_setscheme(drw, scheme[SchemeNorm]);
-		tw = drw_fontset_getwidth(drw, stext) + 2; /* 2px right padding */
-		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
-	}
-
-	// TODO: what is occ? occurence? Occupancy? Like a bit set in occ means
-	// there is at least one client with that tag?
-	// This wil change, when moving to tagviews as a separate struct. A
-	// tabview holds a list of  clients, and so knows the number of clients in
-	// that tag.
-	// For now, just hack into the new linkedlist.
-	for (struct ll_node *n = m->clients.head; n; n = n->next) {
-		Client *c = n->data;
-		occ |= c->tags;
-		if (c->isurgent)
-			urg |= c->tags;
-
-	}
-	x = 0;
-	for (i = 0; i < num_tags; i++) {
-		w = drw_fontset_getwidth(drw, tags[i]) + lrpad;
-		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
-		if (occ & 1 << i)
-			drw_rect(drw, x + boxs, boxs, boxw, boxw,
-				 m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
-				 urg & 1 << i);
-		x += w;
-	}
-	w = blw = drw_fontset_getwidth(drw, m->ltsymbol) + lrpad;
-	drw_setscheme(drw, scheme[SchemeNorm]);
-	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
-
-	if ((w = m->ww - tw - x) > bh) {
-		if (m->sel) {
-			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
-			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
-			if (m->sel->isfloating)
-				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
-		} else {
-			drw_setscheme(drw, scheme[SchemeNorm]);
-			drw_rect(drw, x, 0, w, bh, 1, 1);
-		}
-	}
-	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
+#if BAR
+	XUnmapWindow(dpy, mon->barwin);
+	XDestroyWindow(dpy, mon->barwin);
 #endif
-}
-
-struct ll_node *
-nexttiled(struct ll_node *n)
-{
-	Client *c = n->data;
-
-	while (n && (c->isfloating || !isvisible(c))) {
-		n = n->next;
-		c = n->data;
-	}
-	return n;
-}
-
-Monitor *
-recttomon(int x, int y, int w, int h)
-{
-	Monitor *m, *ret = selmon;
-	int a, area = 0;
-
-	for (m = mons; m; m = m->next)
-		if ((a = area_in_mon(x, y, w, h, m)) > area) {
-			area = a;
-			ret = m;
-		}
-	return ret;
+	free(m);
 }
 
 void
@@ -174,34 +150,14 @@ updatebarpos(Monitor *m)
 	m->wy = m->my;
 	m->wh = m->mh;
 	if (m->showbar) {
-		m->wh -= bh;
+		m->wh -= bar_h;
 		m->by = m->topbar ? m->wy : m->wy + m->wh;
-		m->wy = m->topbar ? m->wy + bh : m->wy;
+		m->wy = m->topbar ? m->wy + bar_h : m->wy;
 	} else {
-		m->by = -bh;
+		m->by = -bar_h;
 	}
 }
 
 //******************************************************************************
 // Internal functions
 //******************************************************************************
-static void
-arrangemon(struct Monitor *m)
-{
-    tagview_arrange(m);
-    if (m->tagview->arrange)
-		m->lt[m->sellt]->arrange(m);
-}
-
-static int area_in_mon(int x, int y, int w, int h, const Monitor *m)
-{
-	return
-		MAX(
-		0,
-		MIN(x + w, m->wx + m->ww) - MAX(x, m->wx)
-		)
-		* MAX(
-		0,
-		MIN(y + h, m->wy + m->wh) - MAX(y, m->wy)
-		);
-}

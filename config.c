@@ -100,6 +100,8 @@ Key keys[] = {
 	{ MODKEY | ShiftMask,     XK_space,  togglefloating, { 0 } },
 	{ MODKEY,                 XK_0,      view,           { .ui = ~0          } },
 	{ MODKEY | ShiftMask,     XK_0,      tag,            { .ui = ~0          } },
+       // TODO: keeping this focusmon for now, but I want absolute mon
+       // selection in the future. Mod+w = select monitor 1
 	{ MODKEY,                 XK_comma,  focusmon,       { .i  = -1          } },
 	{ MODKEY,                 XK_period, focusmon,       { .i  = +1          } },
 	{ MODKEY | ShiftMask,     XK_comma,  tagmon,         { .i  = -1          } },
@@ -135,6 +137,6 @@ Button buttons[] = {
 	{ ClkTagBar,     0,            Button1, view,           { 0           } },
 	{ ClkTagBar,     0,            Button3, toggleview,     { 0           } },
 	{ ClkTagBar,     MOUSE_MODKEY, Button1, tag,            { 0           } },
-	{ ClkTagBar,     MOUSE_MODKEY, Button3, toggletag,      { 0           } },
+	//{ ClkTagBar,     MOUSE_MODKEY, Button3, toggletag,      { 0           } },
 };
 const int num_buttons = LENGTH(buttons);
