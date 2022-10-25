@@ -26,7 +26,7 @@ static const char col_cyan[] = "#005577";
 const char *colors[][3] = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
-	[SchemeSel] =  { col_gray4, col_cyan,  col_cyan  },
+	[SchemeSel] = { col_gray4, col_cyan, col_cyan },
 };
 const int num_colors = LENGTH(colors);
 
@@ -37,6 +37,7 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 const int num_tags = LENGTH(tags);
 const unsigned int tag_mask = (1u << LENGTH(tags)) - 1;
 
+/* *INDENT-OFF* */
 const Rule rules[] = {
 	/* xprop(1):
 	 *	WM_CLASS(STRING) = instance, class
@@ -46,23 +47,26 @@ const Rule rules[] = {
 	{ "Gimp",    NULL, NULL, 0,      1, -1 },
 	{ "Firefox", NULL, NULL, 1 << 8, 0, -1 },
 };
+/* *INDENT-ON* */
+
 const int num_rules = LENGTH(rules);
 
 /* layout(s) */
-const float mfact = 0.55;        /* factor of master area size [0.05..0.95] */
-const int nmaster = 1;           /* number of clients in master area */
 const int resizehints = 0;       /* 1 means respect size hints in tiled resizals */
 
-const Layout layouts[] = {
-	/* symbol     arrange function */
-	{ "[]=", tile    },             /* first entry is default */
-	{ "><>", NULL    },             /* no layout function means floating behavior */
-	{ "[M]", monocle },
-};
-const int num_layouts = LENGTH(layouts);
+/// How to make the layout configurables? They need to be members of
+/// tagviews, so not so easy to make from the config file(s). Some
+/// pre-processing maybe?
+///const Layout layouts[] = {
+///	/* symbol     arrange function */
+///	{ "[]=", tile    },             /* first entry is default */
+///	{ "><>", NULL    },             /* no layout function means floating behavior */
+///	{ "[M]", monocle },
+///};
+///const int num_layouts = LENGTH(layouts);
 
 /* key definitions */
-#define MODKEY Mod4Mask
+#define MODKEY Mod1Mask
 #define TAGKEYS(KEY, TAG) \
 	{ MODKEY, KEY, view, { .ui = 1 << TAG } }, \
 	{ MODKEY | ControlMask, KEY, toggleview, { .ui = 1 << TAG } }, \
@@ -77,8 +81,9 @@ char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 const char *launchercmd[] =
 { "rofi", "-show", "combi", "-combi-modi", "drun,run", "-modi", "drun,run,ssh", "-config", "/home/gauthier/.xmonad/rofi.conf", NULL };
 
-const char *termcmd[] = { "gnome-terminal", NULL };
+const char *termcmd[] = { "xterm", NULL };
 
+/* *INDENT-OFF* */
 Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                 XK_p,      spawn,          { .v  = launchercmd } },
@@ -93,9 +98,9 @@ Key keys[] = {
 	{ MODKEY,                 XK_Return, zoom,           { 0 } },
 	{ MODKEY,                 XK_Tab,    view,           { 0 } },
 	{ MODKEY | ShiftMask,     XK_c,      killclient,     { 0 } },
-	{ MODKEY,                 XK_t,      setlayout,      { .v  = &layouts[0] } },
-	{ MODKEY,                 XK_f,      setlayout,      { .v  = &layouts[1] } },
-	{ MODKEY,                 XK_m,      setlayout,      { .v  = &layouts[2] } },
+///	{ MODKEY,                 XK_t,      setlayout,      { .v  = &layouts[0] } },
+///	{ MODKEY,                 XK_f,      setlayout,      { .v  = &layouts[1] } },
+///	{ MODKEY,                 XK_m,      setlayout,      { .v  = &layouts[2] } },
 	{ MODKEY,                 XK_space,  setlayout,      { 0 } },
 	{ MODKEY | ShiftMask,     XK_space,  togglefloating, { 0 } },
 	{ MODKEY,                 XK_0,      view,           { .ui = ~0          } },
@@ -120,15 +125,18 @@ Key keys[] = {
 	/* My personal keys */
 	{ ControlMask | Mod1Mask, XK_equal,  killclient,     { 0 } },
 };
+/* *INDENT-ON* */
+
 const int num_keys = LENGTH(keys);
 
 #define MOUSE_MODKEY Mod1Mask
 /* button definitions */
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
+/* *INDENT-OFF* */
 Button buttons[] = {
 	/* click                event mask      button          function        argument */
 	{ ClkLtSymbol,   0,            Button1, setlayout,      { 0           } },
-	{ ClkLtSymbol,   0,            Button3, setlayout,      { .v = &layouts[2]} },
+///	{ ClkLtSymbol,   0,            Button3, setlayout,      { .v = &layouts[2]} },
 	{ ClkWinTitle,   0,            Button2, zoom,           { 0           } },
 	{ ClkStatusText, 0,            Button2, spawn,          { .v = termcmd} },
 	{ ClkClientWin,  MOUSE_MODKEY, Button1, movemouse,      { 0           } },
@@ -139,4 +147,5 @@ Button buttons[] = {
 	{ ClkTagBar,     MOUSE_MODKEY, Button1, tag,            { 0           } },
 	//{ ClkTagBar,     MOUSE_MODKEY, Button3, toggletag,      { 0           } },
 };
+/* *INDENT-ON* */
 const int num_buttons = LENGTH(buttons);

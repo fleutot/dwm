@@ -23,17 +23,17 @@
 //******************************************************************************
 // Function definitions
 //******************************************************************************
+int mon_n_clients_get(const struct Monitor *m)
+{
+	return m->tagview->clients.size;
+}
+
 int area_in_mon(int x, int y, int w, int h, const Monitor *m)
 {
-	return
-		MAX(
-			0,
-			MIN(x + w, m->wx + m->ww) - MAX(x, m->wx)
-		)
-		* MAX(
-			0,
-			MIN(y + h, m->wy + m->wh) - MAX(y, m->wy)
-		);
+	return MAX(0,
+		   MIN(x + w, m->wx + m->ww) - MAX(x, m->wx))
+	       * MAX(0,
+		     MIN(y + h, m->wy + m->wh) - MAX(y, m->wy));
 }
 
 void
@@ -50,8 +50,8 @@ arrange(Monitor *m)
 static void
 configure_client_w_changes(void *client, void *storage)
 {
-	struct Client *c = (struct Client *) client;
-	XWindowChanges *win_changes = (XWindowChanges *) storage;
+	struct Client *c = (struct Client *)client;
+	XWindowChanges *win_changes = (XWindowChanges *)storage;
 
 	if (c->isfloating) {
 		return;
@@ -60,7 +60,7 @@ configure_client_w_changes(void *client, void *storage)
 	XConfigureWindow(
 		dpy,
 		c->win,
-		CWSibling|CWStackMode,
+		CWSibling | CWStackMode,
 		win_changes);
 
 	win_changes->sibling = c->win;
@@ -72,6 +72,8 @@ restack(struct Monitor *m)
 	Client *c;
 	XEvent ev;
 	XWindowChanges win_changes;
+
+	printf("%s(%p)\n", __func__, (void *)m);
 
 	bar_draw(m);
 	c = tagview_selected_client_get(m->tagview);
@@ -97,14 +99,9 @@ createmon(struct tagview *with_tagview)
 	Monitor *m;
 
 	m = ecalloc(1, sizeof(Monitor));
-	m->tagset[0] = m->tagset[1] = 1;
-	m->mfact = mfact;
-	m->nmaster = nmaster;
 	m->showbar = showbar;
 	m->topbar = topbar;
 	m->tagview = with_tagview;
-	//m->clients = LIST_EMPTY;
-	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
 }
 
@@ -128,7 +125,7 @@ void
 monocle(Monitor *m)
 {
 #if 0
-	This must move (and be fixed) to layout/layout_fullscreen.c, when it exists.
+	/// This must move (and be fixed) to layout/layout_fullscreen.c, when it exists.
 	unsigned int n = 0;
 	struct ll_node *node;
 

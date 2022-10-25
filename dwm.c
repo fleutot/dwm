@@ -54,15 +54,15 @@
 #include "util.h"
 
 /* macros */
-#define CLEANMASK(mask)	    (mask & ~(numlockmask | LockMask) & (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask))
-#define INTERSECT(x, y, w, h, m)	 (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) \
-				     * MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
-#define TAGMASK		    ((1 << num_tags) - 1)
+#define CLEANMASK(mask)     (mask & ~(numlockmask | LockMask) & (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask))
+#define INTERSECT(x, y, w, h, m)         (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) \
+					  * MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
+#define TAGMASK             ((1 << num_tags) - 1)
 
 /* enums */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
-	NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-	NetWMWindowTypeDialog, NetClientList, NetLast };		 /* EWMH atoms */
+       NetWMFullscreen, NetActiveWindow, NetWMWindowType,
+       NetWMWindowTypeDialog, NetClientList, NetLast };                  /* EWMH atoms */
 
 /* function declarations */
 static void applyrules(Client *c);
@@ -145,13 +145,13 @@ Drw *drw;
 struct list mons;
 Monitor *selmon;
 Atom wmatom[WMLast];
-int lrpad;		    /* sum of left and right padding for text */
+int lrpad;  /* sum of left and right padding for text in the bar*/
 Window root;
 Clr **scheme;
 char stext[256];
 int screen_w, screen_h; // X display screen geometry width, height. Of the
                         // default screen only??
-int bar_h, bar_w = 0;	    /* bar geometry */
+int bar_h, bar_w = 0;   /* bar geometry */
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -166,8 +166,8 @@ void pdebug(const char *s)
 void
 applyrules(Client *c)
 {
-    #if 0
-    Implement rules later
+#if 0
+	Implement rules later
 	const char *class, *instance;
 	unsigned int i;
 	const Rule *r;
@@ -188,7 +188,7 @@ applyrules(Client *c)
 		    && (!r->instance || strstr(instance, r->instance))) {
 			c->isfloating = r->isfloating;
 			c->tags |= r->tags;
-                     // Find the monitor in the rule and put the client there.
+			// Find the monitor in the rule and put the client there.
 			for (m = mons; m && m->num != r->monitor; m = m->next);
 			if (m)
 				c->mon = m;
@@ -199,7 +199,7 @@ applyrules(Client *c)
 	if (ch.res_name)
 		XFree(ch.res_name);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
-       #endif
+#endif
 }
 
 void
@@ -211,6 +211,8 @@ attach(Client *c)
 void
 attachabove(Client *c)
 {
+	printf("%s(%p)\n", __func__, (void *)c);
+
 	Client *selected_client = tagview_selected_client_get(c->mon->tagview);
 
 	if (selected_client == NULL || selected_client->isfloating) {
@@ -228,6 +230,8 @@ buttonpress(const XEvent *e)
 	Client *c;
 	Monitor *m;
 	const XButtonPressedEvent *ev = &e->xbutton;
+
+	printf("%s(%p)\n", __func__, (void *)e);
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -282,11 +286,10 @@ void
 cleanup(void)
 {
 	Arg a = { .ui = ~0 };
-	Layout foo = { "", NULL };
 	size_t i;
 
 	view(&a);
-	selmon->lt[selmon->sellt] = &foo;
+	// TODO: free the monitors, clients, layouts, tagviews, ...
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
 	list_run_for_all(&mons, cleanupmon, NULL);
 
@@ -315,6 +318,7 @@ void cleanupmon(void *input, void *storage)
 void
 clientmessage(const XEvent *e)
 {
+	printf("%s(%p)\n", __func__, (void *)e);
 	const XClientMessageEvent *cme = &e->xclient;
 	Client *c = wintoclient(cme->window);
 
@@ -353,20 +357,20 @@ configurenotify(const XEvent *e)
 			updatebars();
 #if 0
 			I dont really know what to do with this yet
-			for (Monitor *m = mons; m; m = m->next) {
-				for (struct ll_node *node = m->tagview->clients.head;
-				     node;
-				     node = node->next) {
-					Client *c = node->data;
-					if (c->isfullscreen)
-						resizeclient(c, m->mx, m->my, m->mw, m->mh);
-				}
+				for (Monitor *m = mons; m; m = m->next) {
+					for (struct ll_node *node = m->tagview->clients.head;
+					     node;
+					     node = node->next) {
+						Client *c = node->data;
+						if (c->isfullscreen)
+							resizeclient(c, m->mx, m->my, m->mw, m->mh);
+					}
 #if BAR
-				Bar not implemented. Probably not going to deal with them
+					Bar not implemented.Probably not going to deal with them
 					like this anyway.
-				XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bar_h);
+					XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bar_h);
 #endif
-			}
+				}
 #endif
 			focus(NULL);
 			arrange(NULL);
@@ -385,7 +389,7 @@ configurerequest(const XEvent *e)
 	if ((c = wintoclient(ev->window))) {
 		if (ev->value_mask & CWBorderWidth) {
 			c->bw = ev->border_width;
-		} else if (c->isfloating || !selmon->lt[selmon->sellt]->arrange) {
+		} else if (c->isfloating || !selmon->tagview->arrange) {
 			m = c->mon;
 			if (ev->value_mask & CWX) {
 				c->oldx = c->x;
@@ -445,7 +449,7 @@ detach(Client *c)
 
 static void drawbar(void *monitor, void *storage)
 {
-	bar_draw((struct Monitor *) monitor);
+	bar_draw((struct Monitor *)monitor);
 }
 
 void
@@ -496,61 +500,31 @@ expose(const XEvent *e)
 void
 focus(Client *c)
 {
+	printf("%s(%p)\n", __func__, (void *)c);
 	if (c == NULL) {
-		pdebug("focus NULL\n");
-		// vvv debug
-		if (!selmon) {
-			pdebug("focus: not selmon\n");
-		}
-		if (!selmon->tagview) {
-			pdebug("focus: not tagview\n");
-		}
-		// ^^^ debug
 		c = list_selected_data_get(&selmon->tagview->clients);
 		if (c == NULL) {
-			pdebug("focus still NULL\n");
 			return;
 		}
-		pdebug("not null\n");
 	}
-
-	// only for debugging:
-	if (selmon == NULL) {
-		pdebug("focus: selmon is null\n");
-	}
-	if (selmon->tagview->active_client == NULL) {
-		pdebug("focus: activ_c is null\n");
-	}
-	if (selmon->tagview->active_client != c) {
-		pdebug("focus: activ_c is not c\n");
-	}
-	// ^ debugging
 
 	if (selmon->tagview->active_client && selmon->tagview->active_client != c) {
-		pdebug("focus: unfocus\n");
 		unfocus(selmon->tagview->active_client, 0);
 	}
 	if (c) {
-		pdebug("focus: doing stuff with c\n");
 		if (c->mon != selmon)
 			selmon = c->mon;
 		if (c->isurgent)
 			seturgent(c, 0);
-		pdebug("focus: grabbuttons\n");
 		grabbuttons(c, 1);
-		pdebug("focus: window border");
 		XSetWindowBorder(dpy, c->win, scheme[SchemeSel][ColBorder].pixel);
-		pdebug("focus: setfocus\n");
 		setfocus(c);
 	} else {
-		pdebug("focus: doing stuff with root\n");
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
 	}
 	selmon->tagview->active_client = c;
-	pdebug("b4 drawbars\n");
 	drawbars();
-	pdebug("focus done\n");
 }
 
 /* there are some broken focus acquiring clients needing extra handling */
@@ -707,6 +681,7 @@ keypress(const XEvent *e)
 void
 manage(Window w, XWindowAttributes *wa)
 {
+	printf("%s\n", __func__);
 	Client *c, *t = NULL;
 	Window trans = None;
 	XWindowChanges wc;
@@ -759,7 +734,6 @@ manage(Window w, XWindowAttributes *wa)
 	setclientstate(c, NormalState);
 	if (c->mon == selmon)
 		unfocus(selmon->tagview->active_client, 0);
-	c->mon->tagview->active_client = c;
 	arrange(c->mon);
 	XMapWindow(dpy, c->win);
 	focus(NULL);
@@ -793,10 +767,10 @@ maprequest(const XEvent *e)
 void
 motionnotify(const XEvent *e)
 {
-    /* A MotionNotify event reports that the user moved the pointer or
-     * that a program warped the pointer to a new position within a
-     * single window.
-     */
+	/* A MotionNotify event reports that the user moved the pointer or
+	 * that a program warped the pointer to a new position within a
+	 * single window.
+	 */
 	static Monitor *mon = NULL;
 	Monitor *m;
 	const XMotionEvent *ev = &e->xmotion;
@@ -863,13 +837,15 @@ recttomon(int x, int y, int w, int h)
 	Monitor *ret = selmon;
 	int a, area = 0;
 
-       for (int i = 0; i < mons.size; i++) {
-               struct Monitor *m = list_data_handle_get(&mons, i);
-               if ((a = area_in_mon(x, y, w, h, m)) > area) {
-                       area = a;
-                       ret = m;
-               }
-       }
+	for (int i = 0; i < mons.size; i++) {
+		// TODO: this could be done with a list_run_for_all
+		// with callback and storage.
+		struct Monitor *m = list_data_handle_get(&mons, i);
+		if ((a = area_in_mon(x, y, w, h, m)) > area) {
+			area = a;
+			ret = m;
+		}
+	}
 	return ret;
 }
 
@@ -877,6 +853,7 @@ void
 run(void)
 {
 	XEvent ev;
+
 	printf("run start\n"); fflush(stdout);
 	/* main event loop */
 	XSync(dpy, False);
@@ -1164,7 +1141,7 @@ updatebars(void)
 	XSetWindowAttributes wa = {
 		.override_redirect = True,
 		.background_pixmap = ParentRelative,
-		.event_mask        = ButtonPressMask | ExposureMask
+		.event_mask = ButtonPressMask | ExposureMask
 	};
 	XClassHint ch = { "dwm", "dwm" };
 
@@ -1185,7 +1162,8 @@ updatebars(void)
 static void
 client_list_update(void *data, void *storage)
 {
-	struct Client *c = (struct Client *) data;
+	struct Client *c = (struct Client *)data;
+
 	XChangeProperty(dpy, root, netatom[NetClientList],
 			XA_WINDOW, 32, PropModeAppend,
 			(unsigned char *)&(c->win), 1);
@@ -1215,8 +1193,7 @@ static void update_mons_with_new(void *data, void *storage)
 		if (unique[i].x_org != m->mx
 		    || unique[i].y_org != m->my
 		    || unique[i].width != m->mw
-		    || unique[i].height != m->mh
-		) {
+		    || unique[i].height != m->mh) {
 			m->num = i;
 			m->mx = m->wx = unique[i].x_org;
 			m->my = m->wy = unique[i].y_org;
@@ -1230,8 +1207,8 @@ static void update_mons_with_new(void *data, void *storage)
 static bool
 monitor_has_tagview(void *monitor, void *tagview)
 {
-	struct Monitor *m = (struct Monitor *) monitor;
-	struct tagview *tv = (struct tagview *) tagview;
+	struct Monitor *m = (struct Monitor *)monitor;
+	struct tagview *tv = (struct tagview *)tagview;
 
 	return m->tagview == tv;
 }
@@ -1240,10 +1217,11 @@ static struct tagview *
 undisplayed_tagview_get(void)
 {
 	int tv_index = 0;
+
 	while (list_find(
-			&mons,
-			monitor_has_tagview,
-			tagview_get(tv_index))) {
+		       &mons,
+		       monitor_has_tagview,
+		       tagview_get(tv_index))) {
 		tv_index++;
 	}
 	return tagview_get(tv_index);
@@ -1253,6 +1231,7 @@ int
 updategeom(void)
 {
 	bool dirty = false;
+
 	pdebug("updategeom start\n");
 
 #ifdef XINERAMA
@@ -1277,15 +1256,14 @@ updategeom(void)
 				list_add(&mons, createmon(undisplayed_tagview_get()));
 			}
 			pdebug("\n");
+			struct xinerama_screen_info screen_info = {
+				.unique = unique,
+				.size = new_num_mons
+			};
 			list_run_for_all(
 				&mons,
 				update_mons_with_new,
-				&(struct xinerama_screen_info) {
-					.unique = unique,
-					.size = new_num_mons
-				}
-			);
-
+				&screen_info);
 
 			// TODO: make the new monitors show tagviews
 			// that are not visible.
@@ -1297,7 +1275,6 @@ updategeom(void)
 			// and clear the bit in the mask. That should
 			// be possible by passing the mask to the
 			// callback through storage.
-
 		} else {
 			pdebug("updategeom remove mons");
 			/* fewer monitors available */
@@ -1322,8 +1299,8 @@ updategeom(void)
 			m = createmon(undisplayed_tagview_get());
 			list_add(&mons, m);
 		} else {
-                  m = selmon;
-              }
+			m = selmon;
+		}
 		if (m->mw != screen_w || m->mh != screen_h) {
 			dirty = true;
 			m->mw = m->ww = screen_w;
@@ -1461,6 +1438,7 @@ window_is_barwin(void *monitor, void *window)
 {
 	struct Monitor *m = monitor;
 	Window *w = window;
+
 	return *w == m->barwin;
 }
 

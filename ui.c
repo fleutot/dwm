@@ -122,10 +122,10 @@ movemouse(const Arg *arg)
 				ny = selmon->wy;
 			else if (abs((selmon->wy + selmon->wh) - (ny + height(c))) < snap)
 				ny = selmon->wy + selmon->wh - height(c);
-			if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+			if (!c->isfloating && selmon->tagview->arrange
 			    && (abs(nx - c->x) > snap || abs(ny - c->y) > snap))
 				togglefloating(NULL);
-			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+			if (!selmon->tagview->arrange || c->isfloating)
 				resize(c, nx, ny, c->w, c->h, 1);
 			break;
 		}
@@ -181,11 +181,11 @@ resizemouse(const Arg *arg)
 			nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
 			if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
 			    && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh) {
-				if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+				if (!c->isfloating && selmon->tagview->arrange
 				    && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
 					togglefloating(NULL);
 			}
-			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+			if (!selmon->tagview->arrange || c->isfloating)
 				resize(c, c->x, c->y, nw, nh, 1);
 			break;
 		}
@@ -203,6 +203,8 @@ resizemouse(const Arg *arg)
 void
 setlayout(const Arg *arg)
 {
+	// Not implemented. Below is the origin dwm, kind of:
+#if 0
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
@@ -212,6 +214,7 @@ setlayout(const Arg *arg)
 		arrange(selmon);
 	else
 		bar_draw(selmon);
+#endif
 }
 
 /* arg > 1.0 will set mfact absolutely */
@@ -220,7 +223,7 @@ setmfact(const Arg *arg)
 {
 	float f;
 
-	if (!arg || !selmon->lt[selmon->sellt]->arrange)
+	if (!arg || !selmon->tagview->arrange)
 		return;
 	f = arg->f < 1.0 ? arg->f + selmon->mfact : arg->f - 1.0;
 	if (f < 0.05 || f > 0.95)
@@ -383,7 +386,7 @@ zoom(const Arg *arg)
 	    || (selmon->tagview
 		&& selmon->tagview->active_client
 		&& selmon->tagview->active_client->isfloating)
-		) {
+	    ) {
 		return;
 	}
 

@@ -135,7 +135,7 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		*h = bar_h;
 	if (*w < bar_h)
 		*w = bar_h;
-	if (resizehints || c->isfloating || !c->mon->tagview->layout->arrange) {
+	if (resizehints || c->isfloating || !c->mon->tagview->arrange) {
 		/* see last two sentences in ICCCM 4.1.2.3 */
 		baseismin = c->basew == c->minw && c->baseh == c->minh;
 		if (!baseismin) { /* temporarily remove base dimensions */

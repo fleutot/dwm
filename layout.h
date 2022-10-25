@@ -8,8 +8,6 @@ typedef struct layout {
 	void (*arrange)(Monitor *);
 } Layout;
 
-typedef void (*layout_arrange_function_t)(
-    void *layout_cfg,
-    const struct Monitor *mon);
+typedef void (*layout_arrange_function_t)(void *layout_cfg, struct Monitor *mon);
 
 #endif

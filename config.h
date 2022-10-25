@@ -5,7 +5,6 @@
 
 #include "client.h"
 #include "input.h"
-#include "layout.h"
 #include "ui.h"
 #include "util.h"
 
@@ -36,9 +35,6 @@ extern const int num_rules;
 extern const float mfact;           /* factor of master area size [0.05..0.95] */
 extern const int nmaster;           /* number of clients in master area */
 extern const int resizehints;       /* 1 means respect size hints in tiled resizals */
-
-extern const Layout layouts[];
-extern const int num_layouts;
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char *[]){ "/bin/sh", "-c", cmd, NULL } }
