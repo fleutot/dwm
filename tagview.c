@@ -26,7 +26,6 @@ void tagview_init(void)
 			.arrange = LAYOUT_DEFAULT,
 			.layout_cfg = &tagviews[i].layout_cfg_two_cols,
 			.clients = LIST_EMPTY,
-			.active_client = NULL,
 			.layout_cfg_two_cols = (struct layout_cfg_two_cols) {
 				.n_master = 1,
 				.col_ratio = 0.5,
@@ -59,34 +58,32 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout)
 
 void tagview_add_client(struct tagview *t, Client *c)
 {
-	printf("%s(%p, %p)\n", __func__, (void *)t, (void *)c);
-	list_add_before(&t->clients, &t->active_client, c);
+	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
+	list_add_before(&t->clients, t->clients.selected, c);
 	list_select(&t->clients, c);
 }
 
 void tagview_prepend_client(struct tagview *t, Client *c)
 {
-	printf("%s(%p, %p)\n", __func__, (void *)t, (void *)c);
+	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
 	list_prepend(&t->clients, c);
 	list_select(&t->clients, c);
 }
 
 Client *tagview_next_client_select(struct tagview *t)
 {
-	t->active_client = list_next_select(&t->clients);
-	return t->active_client;
+	return list_next_select(&t->clients);
 }
 
 Client *tagview_prev_client_select(struct tagview *t)
 {
-	t->active_client = list_prev_select(&t->clients);
-	return t->active_client;
+	return list_prev_select(&t->clients);
 }
 
 Client *tagview_selected_client_get(struct tagview *t)
 {
-	printf("%s(%p)\n", __func__, (void *)t);
-	return (Client *)list_selected_data_get(&t->clients);
+	printf("%s(%p)\n", __func__, (void *) t);
+	return (Client *) list_selected_data_get(&t->clients);
 }
 
 void tagview_run_for_all_tv_all_clients(
@@ -99,9 +96,9 @@ void tagview_run_for_all_tv_all_clients(
 
 static bool window_to_find_is_client(void *c, void *w)
 {
-	Window *window_to_find = (Window *)w;
+	Window *window_to_find = (Window *) w;
 
-	return ((struct Client *)c)->win == *window_to_find;
+	return ((struct Client *) c)->win == *window_to_find;
 }
 struct Client *tagview_find_window_client(Window *w)
 {

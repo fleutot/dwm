@@ -28,6 +28,16 @@ int mon_n_clients_get(const struct Monitor *m)
 	return m->tagview->clients.size;
 }
 
+struct Client *mon_selected_client_get(const struct Monitor *m)
+{
+	return tagview_selected_client_get(m->tagview);
+}
+
+void mon_selected_client_set(struct Monitor *m, struct Client *c)
+{
+	list_select(&m->tagview->clients, c);
+}
+
 int area_in_mon(int x, int y, int w, int h, const Monitor *m)
 {
 	return MAX(0,
@@ -50,8 +60,8 @@ arrange(Monitor *m)
 static void
 configure_client_w_changes(void *client, void *storage)
 {
-	struct Client *c = (struct Client *)client;
-	XWindowChanges *win_changes = (XWindowChanges *)storage;
+	struct Client *c = (struct Client *) client;
+	XWindowChanges *win_changes = (XWindowChanges *) storage;
 
 	if (c->isfloating) {
 		return;
@@ -73,7 +83,7 @@ restack(struct Monitor *m)
 	XEvent ev;
 	XWindowChanges win_changes;
 
-	printf("%s(%p)\n", __func__, (void *)m);
+	printf("%s(%p)\n", __func__, (void *) m);
 
 	bar_draw(m);
 	c = tagview_selected_client_get(m->tagview);

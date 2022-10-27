@@ -29,7 +29,7 @@ focusmon(const Arg *arg)
 	m = dirtomon(arg->i);
 	if (m == selmon)
 		return;
-	unfocus(selmon->tagview->active_client, 0);
+	unfocus(mon_selected_client_get(selmon), 0);
 	selmon = m;
 	focus(NULL);
 }
@@ -39,7 +39,7 @@ focusstack(const Arg *arg)
 {
 	Client *c = NULL;
 
-	if (!selmon->tagview->active_client)
+	if (mon_selected_client_get(selmon) == NULL)
 		return;
 
 	if (arg->i > 0) {
@@ -63,15 +63,17 @@ incnmaster(const Arg *arg)
 void
 killclient(const Arg *arg)
 {
-	if (selmon->tagview->active_client == NULL) {
+	struct Client *c = mon_selected_client_get(selmon);
+
+	if (c == NULL) {
 		return;
 	}
 
-	if (!sendevent(selmon->tagview->active_client, wmatom[WMDelete])) {
+	if (!sendevent(mon_selected_client_get(selmon), wmatom[WMDelete])) {
 		XGrabServer(dpy);
 		XSetErrorHandler(xerrordummy);
 		XSetCloseDownMode(dpy, DestroyAll);
-		XKillClient(dpy, selmon->tagview->active_client->win);
+		XKillClient(dpy, c->win);
 		XSync(dpy, False);
 		XSetErrorHandler(xerror);
 		XUngrabServer(dpy);
@@ -82,12 +84,14 @@ void
 movemouse(const Arg *arg)
 {
 	int x, y, ocx, ocy, nx, ny;
-	Client *c;
+	struct Client *c;
 	Monitor *m;
 	XEvent ev;
 	Time lasttime = 0;
 
-	if (!(c = selmon->tagview->active_client))
+	c = mon_selected_client_get(selmon);
+
+	if (c == NULL)
 		return;
 	if (c->isfullscreen) /* no support moving fullscreen windows by mouse */
 		return;
@@ -148,12 +152,14 @@ void
 resizemouse(const Arg *arg)
 {
 	int ocx, ocy, nw, nh;
-	Client *c;
+	struct Client *c;
 	Monitor *m;
 	XEvent ev;
 	Time lasttime = 0;
 
-	if (!(c = selmon->tagview->active_client))
+	c = mon_selected_client_get(selmon);
+
+	if (c == NULL)
 		return;
 	if (c->isfullscreen) /* no support resizing fullscreen windows by mouse */
 		return;
@@ -208,7 +214,7 @@ setlayout(const Arg *arg)
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
-		selmon->lt[selmon->sellt] = (Layout *)arg->v;
+		selmon->lt[selmon->sellt] = (Layout *) arg->v;
 	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
 	if (selmon->tagview->active_client)
 		arrange(selmon);
@@ -247,8 +253,8 @@ spawn(const Arg *arg)
 		if (dpy)
 			close(ConnectionNumber(dpy));
 		setsid();
-		execvp(((char **)arg->v)[0], (char **)arg->v);
-		fprintf(stderr, "dwm: execvp %s", ((char **)arg->v)[0]);
+		execvp(((char **) arg->v)[0], (char **) arg->v);
+		fprintf(stderr, "dwm: execvp %s", ((char **) arg->v)[0]);
 		perror(" failed");
 		exit(EXIT_SUCCESS);
 	}
@@ -373,20 +379,18 @@ view(const Arg *arg)
 	arrange(selmon);
 }
 
+/// Zoom is "send to master"?
 void
 zoom(const Arg *arg)
 {
-	Client *c = tagview_selected_client_get(selmon->tagview);
+	struct Client *c = mon_selected_client_get(selmon);
 
 	if (c == NULL) {
 		return;
 	}
 
 	if ((selmon->tagview->arrange == NULL)
-	    || (selmon->tagview
-		&& selmon->tagview->active_client
-		&& selmon->tagview->active_client->isfloating)
-	    ) {
+	    || c->isfloating) {
 		return;
 	}
 

@@ -1,7 +1,3 @@
-/*----------------------------------------------------------------------------
-Copyright (c) 2013 Gauthier Fleutot Ostervall
-----------------------------------------------------------------------------*/
-
 #ifndef LINKEDLIST_H_INCLUDED
 #define LINKEDLIST_H_INCLUDED
 
@@ -19,24 +15,24 @@ struct ll_node;
 // implemented. When that occurs, the struct ll_node definition can move back to
 // the c file.
 struct ll_node {
-    void *data;
-    struct ll_node *next;
+	void *data;
+	struct ll_node *next;
 };
 
 struct list {
-    int size;
-    struct ll_node *head;
-    // An ll_node* is maybe not very interesting, would pointer to the
-    // selected *data be more interesting? A pointer to the ll_node is
-    // nice, to add a new client to the list.
-    struct ll_node *selected;
+	int size;
+	struct ll_node *head;
+	// An ll_node* is maybe not very interesting, would pointer to the
+	// selected *data be more interesting? A pointer to the ll_node is
+	// nice, to add a new client to the list.
+	struct ll_node *selected;
 };
 
 #define LIST_EMPTY (struct list) {  \
-        .size = 0,                              \
-            .head = NULL,                       \
-            .selected = NULL                    \
-            }
+		.size = 0,                              \
+		.head = NULL,                       \
+		.selected = NULL                    \
+}
 
 //  ----------------------------------------------------------------------------
 /// \brief  Link a new element at the end of the destination list.
@@ -68,7 +64,6 @@ void list_add_before(struct list *l, void *at, void *data);
 
 void list_rm(struct list *l, void *data);
 
-//
 /// ----------------------------------------------------------------------------
 /// \brief Pop the last element of the list. The list node gets freed,
 /// but the caller is responsible for freeing the data itself.
@@ -95,9 +90,9 @@ void list_destroy(struct list *l);
 /// \param  storage Extra data to give the callback.
 //  ----------------------------------------------------------------------------
 void list_run_for_all(
-    struct list *l,
-    void (*callback)(void *data, void *storage),
-    void *storage);
+	struct list *l,
+	void (*callback)(void *data, void *storage),
+	void *storage);
 
 //  ----------------------------------------------------------------------------
 /// \brief Find the data for which the callback is true.
@@ -107,11 +102,12 @@ void list_run_for_all(
 /// \return Pointer to the data found. NULL if not found.
 //  ----------------------------------------------------------------------------
 void *list_find(
-    struct list *l,
-    bool (*callback)(void *data, void *storage),
-    void *storage);
+	struct list *l,
+	bool (*callback)(void *data, void *storage),
+	void *storage);
 
 void list_select(struct list *list, void *data);
+void list_head_select(struct list *list);
 void *list_next_select(struct list *l);
 void *list_prev_select(struct list *l);
 void *list_selected_data_get(struct list *l);
@@ -123,13 +119,14 @@ void *list_selected_data_get(struct list *l);
 /// \param  list The list to explore.
 /// \param  position The index to the node of interest.
 //  ----------------------------------------------------------------------------
-void *list_data_handle_get(struct list *l,
-    unsigned int const position);
+void *list_data_handle_get(
+	struct list *l,
+	unsigned int const position);
 
 
 //  ----------------------------------------------------------------------------
 /// \brief Get the size of the list passed as parameter.
 //  ----------------------------------------------------------------------------
-int list_size_get(struct list *l);
+int list_size_get(const struct list *l);
 
 #endif // LINKEDLIST_H_INCLUDED

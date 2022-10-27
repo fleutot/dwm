@@ -54,15 +54,28 @@
 #include "util.h"
 
 /* macros */
-#define CLEANMASK(mask)     (mask & ~(numlockmask | LockMask) & (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | Mod5Mask))
-#define INTERSECT(x, y, w, h, m)         (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) \
-					  * MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
-#define TAGMASK             ((1 << num_tags) - 1)
+#define CLEANMASK(mask)                                                 \
+	(mask & ~(numlockmask | LockMask) &                             \
+	 (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask | \
+	  Mod5Mask))
+#define INTERSECT(x, y, w, h, m)                                        \
+	(MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) * \
+	 MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
+#define TAGMASK ((1 << num_tags) - 1)
 
 /* enums */
-enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
-       NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-       NetWMWindowTypeDialog, NetClientList, NetLast };                  /* EWMH atoms */
+enum {
+	NetSupported,
+	NetWMName,
+	NetWMState,
+	NetWMCheck,
+	NetWMFullscreen,
+	NetActiveWindow,
+	NetWMWindowType,
+	NetWMWindowTypeDialog,
+	NetClientList,
+	NetLast
+}; /* EWMH atoms */
 
 /* function declarations */
 static void applyrules(Client *c);
@@ -119,7 +132,7 @@ static const char broken[] = "broken";
 static int screen;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0;
-static void (*handler[LASTEvent]) (const XEvent *) = {
+static void (*handler[LASTEvent])(const XEvent *) = {
 	[ButtonPress] = buttonpress,
 	[ClientMessage] = clientmessage,
 	[ConfigureRequest] = configurerequest,
@@ -145,7 +158,7 @@ Drw *drw;
 struct list mons;
 Monitor *selmon;
 Atom wmatom[WMLast];
-int lrpad;  /* sum of left and right padding for text in the bar*/
+int lrpad; /* sum of left and right padding for text in the bar*/
 Window root;
 Clr **scheme;
 char stext[256];
@@ -441,10 +454,19 @@ destroynotify(const XEvent *e)
 		unmanage(c, 1);
 }
 
-void
-detach(Client *c)
+void detach(Client *c)
 {
+	printf("%s(%p)\n", __func__, (void *)c);
+	struct Client *new_selected_c = list_next_select(&c->mon->tagview->clients);
+
 	list_rm(&c->mon->tagview->clients, c);
+
+	if (new_selected_c == NULL) {
+		// The list head might be NULL
+		list_head_select(&c->mon->tagview->clients);
+	} else {
+		list_select(&c->mon->tagview->clients, new_selected_c);
+	}
 }
 
 static void drawbar(void *monitor, void *storage)
@@ -475,10 +497,12 @@ enternotify(const XEvent *e)
 		return;
 	c = wintoclient(ev->window);
 	m = c ? c->mon : wintomon(ev->window);
+	struct Client *sel_client = mon_selected_client_get(selmon);
+
 	if (m != selmon) {
-		unfocus(selmon->tagview->active_client, 1);
+		unfocus(sel_client, 1);
 		selmon = m;
-	} else if (!c || c == selmon->tagview->active_client) {
+	} else if (!c || c == sel_client) {
 		return;
 	}
 	focus(c);
@@ -500,16 +524,19 @@ expose(const XEvent *e)
 void
 focus(Client *c)
 {
+	//	does c have mon set correctly?
 	printf("%s(%p)\n", __func__, (void *)c);
 	if (c == NULL) {
-		c = list_selected_data_get(&selmon->tagview->clients);
+		c = mon_selected_client_get(selmon);
 		if (c == NULL) {
+			printf("%s: nothing to focus\n", __func__);
 			return;
 		}
 	}
 
-	if (selmon->tagview->active_client && selmon->tagview->active_client != c) {
-		unfocus(selmon->tagview->active_client, 0);
+	struct Client *sel_client = mon_selected_client_get(selmon);
+	if (c != sel_client) {
+		unfocus(sel_client, 0);
 	}
 	if (c) {
 		if (c->mon != selmon)
@@ -523,7 +550,7 @@ focus(Client *c)
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
 	}
-	selmon->tagview->active_client = c;
+	mon_selected_client_set(selmon, c);
 	drawbars();
 }
 
@@ -533,8 +560,10 @@ focusin(const XEvent *e)
 {
 	const XFocusChangeEvent *ev = &e->xfocus;
 
-	if (selmon->tagview->active_client && ev->window != selmon->tagview->active_client->win)
-		setfocus(selmon->tagview->active_client);
+	struct Client *sel_client = mon_selected_client_get(selmon);
+
+	if (sel_client && ev->window != sel_client->win)
+		setfocus(sel_client);
 }
 
 Atom
@@ -733,7 +762,7 @@ manage(Window w, XWindowAttributes *wa)
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * screen_w, c->y, c->w, c->h); /* some windows require this */
 	setclientstate(c, NormalState);
 	if (c->mon == selmon)
-		unfocus(selmon->tagview->active_client, 0);
+		unfocus(mon_selected_client_get(selmon), 0);
 	arrange(c->mon);
 	XMapWindow(dpy, c->win);
 	focus(NULL);
@@ -778,7 +807,7 @@ motionnotify(const XEvent *e)
 	if (ev->window != root)
 		return;
 	if ((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
-		unfocus(selmon->tagview->active_client, 1);
+		unfocus(mon_selected_client_get(selmon), 1);
 		selmon = m;
 		focus(NULL);
 	}
@@ -807,7 +836,8 @@ propertynotify(const XEvent *e)
 		return; /* ignore */
 	} else if ((c = wintoclient(ev->window))) {
 		switch (ev->atom) {
-		default: break;
+		default:
+			break;
 		case XA_WM_TRANSIENT_FOR:
 			if (!c->isfloating && (XGetTransientForHint(dpy, c->win, &trans)) &&
 			    (c->isfloating = (wintoclient(trans)) != NULL))
@@ -823,7 +853,7 @@ propertynotify(const XEvent *e)
 		}
 		if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
 			updatetitle(c);
-			if (c == c->mon->tagview->active_client)
+			if (c == mon_selected_client_get(c->mon))
 				bar_draw(c->mon);
 		}
 		if (ev->atom == netatom[NetWMWindowType])
@@ -1101,6 +1131,7 @@ unmanage(Client *c, int destroyed)
 	Monitor *m = c->mon;
 	XWindowChanges wc;
 
+	printf("%s(%p, %d)\n", __func__, (void *)c, destroyed);
 	detach(c);
 	if (!destroyed) {
 		wc.border_width = c->oldbw;
@@ -1260,10 +1291,8 @@ updategeom(void)
 				.unique = unique,
 				.size = new_num_mons
 			};
-			list_run_for_all(
-				&mons,
-				update_mons_with_new,
-				&screen_info);
+
+			list_run_for_all(&mons, update_mons_with_new, &screen_info);
 
 			// TODO: make the new monitors show tagviews
 			// that are not visible.
@@ -1282,9 +1311,7 @@ updategeom(void)
 				struct Monitor *m = list_pop(&mons);
 				monitor_destruct(m);
 				if (m == selmon) {
-					selmon = list_data_handle_get(
-						&mons,
-						0);
+					selmon = list_data_handle_get(&mons, 0);
 				}
 			}
 		}
@@ -1413,7 +1440,7 @@ updatewmhints(Client *c)
 	XWMHints *wmh;
 
 	if ((wmh = XGetWMHints(dpy, c->win))) {
-		if (c == selmon->tagview->active_client && wmh->flags & XUrgencyHint) {
+		if (c == mon_selected_client_get(selmon) && wmh->flags & XUrgencyHint) {
 			wmh->flags &= ~XUrgencyHint;
 			XSetWMHints(dpy, c->win, wmh);
 		} else {

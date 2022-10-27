@@ -34,6 +34,9 @@ struct Monitor {
 
 int mon_n_clients_get(const struct Monitor *m);
 
+struct Client *mon_selected_client_get(const struct Monitor *m);
+void mon_selected_client_set(struct Monitor *m, struct Client *c);
+
 int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 
 void arrange(Monitor *m);

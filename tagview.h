@@ -17,7 +17,6 @@ struct tagview {
 	struct list clients;
 
 	struct layout *layout;
-	Client *active_client; // Is this needed, or use _selected_client_get()?
 
 	// Each tagview must have separate layout configs for each
 	// available layout.
@@ -38,8 +37,8 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout);
 void tagview_arrange(struct Monitor *m);
 void tagview_add_client(struct tagview *t, Client *c);
 void tagview_prepend_client(struct tagview *t, Client *c);
-Client *tagview_next_client_select(struct tagview *t);
-Client *tagview_selected_client_get(struct tagview *t);
+struct Client *tagview_next_client_select(struct tagview *t);
+struct Client *tagview_selected_client_get(struct tagview *t);
 void tagview_run_for_all_tv_all_clients(void (*callback)(void *data, void *storage));
 struct Client *tagview_find_window_client(Window *w);
 

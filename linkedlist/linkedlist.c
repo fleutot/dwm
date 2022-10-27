@@ -85,6 +85,11 @@ void list_rm(struct list *l, void *data)
 		n->next = n->next->next;
 	}
 
+
+	if (l->selected == to_remove) {
+		l->selected = NULL;
+	}
+
 	free(to_remove);
 	l->size--;
 }
@@ -184,6 +189,11 @@ void list_select(struct list *list, void *data)
 	}
 }
 
+void list_head_select(struct list *list)
+{
+	list->selected = list->head;
+}
+
 void *list_next_select(struct list *list)
 {
 	if ((list->selected == NULL) || (list->selected->next == NULL)) {
@@ -241,6 +251,11 @@ void *list_data_handle_get(
 	struct ll_node *walker = nodes_walker(list->head, position);
 
 	return walker->data;
+}
+
+int list_size_get(const struct list *l)
+{
+	return l->size;
 }
 
 // ----------------------------------------------------------------------------

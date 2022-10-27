@@ -5,7 +5,7 @@ include config.mk
 
 ROOT = $(shell git rev-parse --show-toplevel)
 
-CFLAGS += -ggdb
+CFLAGS += -ggdb -Og
 
 CFLAGS += \
 	-I$(ROOT) \
