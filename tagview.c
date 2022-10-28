@@ -59,7 +59,7 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout)
 void tagview_add_client(struct tagview *t, Client *c)
 {
 	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
-	list_add_before(&t->clients, t->clients.selected, c);
+	list_add_before(&t->clients, t->clients.selected->data, c);
 	list_select(&t->clients, c);
 }
 
