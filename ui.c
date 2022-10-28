@@ -44,8 +44,14 @@ focusstack(const Arg *arg)
 
 	if (arg->i > 0) {
 		c = list_next_select(&selmon->tagview->clients);
+		if (c == NULL) {
+			c = list_head_select(&selmon->tagview->clients);
+		}
 	} else {
 		c = list_prev_select(&selmon->tagview->clients);
+		if (c == NULL) {
+			c = list_tail_select(&selmon->tagview->clients);
+		}
 	}
 	if (c) {
 		focus(c);
@@ -64,7 +70,6 @@ void
 killclient(const Arg *arg)
 {
 	struct Client *c = mon_selected_client_get(selmon);
-
 	if (c == NULL) {
 		return;
 	}
@@ -241,13 +246,6 @@ setmfact(const Arg *arg)
 void
 spawn(const Arg *arg)
 {
-	/*
-	 * I don't see the point of this yet, and making it build would require
-	 * making `launchercmd` a global. Not unthinkable, but let's wait and
-	 * see.
-	 * if (arg->v == launchercmd)
-	 *      dmenumon[0] = '0' + selmon->num;
-	 */
 	if (fork() == 0) {
 		/* In the child process */
 		if (dpy)

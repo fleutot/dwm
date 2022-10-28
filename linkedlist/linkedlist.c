@@ -184,19 +184,39 @@ void list_select(struct list *list, void *data)
 	     n = n->next) {
 	}
 
-	if (n != NULL) {
+	if (n->data == data) {
+		printf("%s: data found\n", __func__);
 		list->selected = n;
+	} else {
+		printf("%s: data not found\n", __func__);
 	}
 }
 
-void list_head_select(struct list *list)
+void *list_head_select(struct list *list)
 {
 	list->selected = list->head;
+	if (list->head == NULL) {
+		return NULL;
+	}
+	return list->head->data;
+}
+
+void *list_tail_select(struct list *l)
+{
+	struct ll_node *n;
+
+	for (n = l->head;
+	     n != NULL && n->next != NULL;
+	     n = n->next) {
+	}
+
+	l->selected = n;
+	return l->selected == NULL ? NULL : l->selected->data;
 }
 
 void *list_next_select(struct list *list)
 {
-	if ((list->selected == NULL) || (list->selected->next == NULL)) {
+	if (list->selected == NULL) {
 		list->selected = list->head;
 	} else {
 		list->selected = list->selected->next;
@@ -213,6 +233,13 @@ void *list_prev_select(struct list *l)
 		l->selected = l->head;
 		return l->selected == NULL ? NULL : l->selected->data;
 	}
+
+	if (l->head == l->selected) {
+		// Don't wrap around if the head is selected. Then
+		// there is no previous.
+		return NULL;
+	}
+
 
 	struct ll_node *n;
 	for (n = l->head;

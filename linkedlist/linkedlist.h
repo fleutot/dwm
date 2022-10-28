@@ -107,7 +107,8 @@ void *list_find(
 	void *storage);
 
 void list_select(struct list *list, void *data);
-void list_head_select(struct list *list);
+void *list_head_select(struct list *list);
+void *list_tail_select(struct list *l);
 void *list_next_select(struct list *l);
 void *list_prev_select(struct list *l);
 void *list_selected_data_get(struct list *l);
