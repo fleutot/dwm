@@ -224,7 +224,7 @@ attach(Client *c)
 void
 attachabove(Client *c)
 {
-	printf("%s(%p)\n", __func__, (void *)c);
+	printf("%s(%p)\n", __func__, (void *) c);
 
 	Client *selected_client = tagview_selected_client_get(c->mon->tagview);
 
@@ -244,7 +244,7 @@ buttonpress(const XEvent *e)
 	Monitor *m;
 	const XButtonPressedEvent *ev = &e->xbutton;
 
-	printf("%s(%p)\n", __func__, (void *)e);
+	printf("%s(%p)\n", __func__, (void *) e);
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -267,7 +267,7 @@ buttonpress(const XEvent *e)
 			arg.ui = 1 << i;
 		} else if (ev->x < x + blw) {
 			click = ClkLtSymbol;
-		} else if (ev->x > selmon->ww - (int)drw_fontset_getwidth(drw, stext) + lrpad) {
+		} else if (ev->x > selmon->ww - (int) drw_fontset_getwidth(drw, stext) + lrpad) {
 			click = ClkStatusText;
 		} else {
 			click = ClkWinTitle;
@@ -331,7 +331,7 @@ void cleanupmon(void *input, void *storage)
 void
 clientmessage(const XEvent *e)
 {
-	printf("%s(%p)\n", __func__, (void *)e);
+	printf("%s(%p)\n", __func__, (void *) e);
 	const XClientMessageEvent *cme = &e->xclient;
 	Client *c = wintoclient(cme->window);
 
@@ -456,7 +456,7 @@ destroynotify(const XEvent *e)
 
 void detach(Client *c)
 {
-	printf("%s(%p)\n", __func__, (void *)c);
+	printf("%s(%p)\n", __func__, (void *) c);
 	struct Client *new_selected_c = list_next_select(&c->mon->tagview->clients);
 
 	list_rm(&c->mon->tagview->clients, c);
@@ -471,7 +471,7 @@ void detach(Client *c)
 
 static void drawbar(void *monitor, void *storage)
 {
-	bar_draw((struct Monitor *)monitor);
+	bar_draw((struct Monitor *) monitor);
 }
 
 void
@@ -525,7 +525,7 @@ void
 focus(Client *c)
 {
 	//	does c have mon set correctly?
-	printf("%s(%p)\n", __func__, (void *)c);
+	printf("%s(%p)----------------------\n", __func__, (void *) c);
 	if (c == NULL) {
 		c = mon_selected_client_get(selmon);
 		if (c == NULL) {
@@ -536,6 +536,7 @@ focus(Client *c)
 
 	struct Client *sel_client = mon_selected_client_get(selmon);
 	if (c != sel_client) {
+		printf("%s: unfocus\n", __func__);
 		unfocus(sel_client, 0);
 	}
 	if (c) {
@@ -576,7 +577,7 @@ getatomprop(Client *c, Atom prop)
 
 	if (XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
 			       &da, &di, &dl, &dl, &p) == Success && p) {
-		atom = *(Atom *)p;
+		atom = *(Atom *) p;
 		XFree(p);
 	}
 	return atom;
@@ -602,7 +603,7 @@ getstate(Window w)
 	Atom real;
 
 	if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False, wmatom[WMState],
-			       &real, &format, &n, &extra, (unsigned char **)&p) != Success)
+			       &real, &format, &n, &extra, (unsigned char **) &p) != Success)
 		return -1;
 	if (n != 0)
 		result = *p;
@@ -623,7 +624,7 @@ gettextprop(Window w, Atom atom, char *text, unsigned int size)
 	if (!XGetTextProperty(dpy, w, &name, atom) || !name.nitems)
 		return 0;
 	if (name.encoding == XA_STRING) {
-		strncpy(text, (char *)name.value, size - 1);
+		strncpy(text, (char *) name.value, size - 1);
 	} else {
 		if (XmbTextPropertyToTextList(dpy, &name, &list, &n) >= Success && n > 0 && *list) {
 			strncpy(text, *list, size - 1);
@@ -696,7 +697,7 @@ keypress(const XEvent *e)
 	const XKeyEvent *ev;
 
 	ev = &e->xkey;
-	keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+	keysym = XKeycodeToKeysym(dpy, (KeyCode) ev->keycode, 0);
 	for (i = 0; i < num_keys; i++)
 		if (keysym == keys[i].keysym
 		    && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
@@ -710,7 +711,7 @@ keypress(const XEvent *e)
 void
 manage(Window w, XWindowAttributes *wa)
 {
-	printf("%s\n", __func__);
+	printf("%s======================================\n", __func__);
 	Client *c, *t = NULL;
 	Window trans = None;
 	XWindowChanges wc;
@@ -758,7 +759,7 @@ manage(Window w, XWindowAttributes *wa)
 		XRaiseWindow(dpy, c->win);
 	attachabove(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
-			(unsigned char *)&(c->win), 1);
+			(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * screen_w, c->y, c->w, c->h); /* some windows require this */
 	setclientstate(c, NormalState);
 	if (c->mon == selmon)
@@ -940,7 +941,7 @@ setclientstate(Client *c, long state)
 	long data[] = { state, None };
 
 	XChangeProperty(dpy, c->win, wmatom[WMState], wmatom[WMState], 32,
-			PropModeReplace, (unsigned char *)data, 2);
+			PropModeReplace, (unsigned char *) data, 2);
 }
 
 int
@@ -975,7 +976,7 @@ setfocus(Client *c)
 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
 		XChangeProperty(dpy, root, netatom[NetActiveWindow],
 				XA_WINDOW, 32, PropModeReplace,
-				(unsigned char *)&(c->win), 1);
+				(unsigned char *) &(c->win), 1);
 	}
 	sendevent(c, wmatom[WMTakeFocus]);
 }
@@ -985,7 +986,7 @@ setfullscreen(Client *c, int fullscreen)
 {
 	if (fullscreen && !c->isfullscreen) {
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-				PropModeReplace, (unsigned char *)&netatom[NetWMFullscreen], 1);
+				PropModeReplace, (unsigned char *) &netatom[NetWMFullscreen], 1);
 		c->isfullscreen = 1;
 		c->oldstate = c->isfloating;
 		c->oldbw = c->bw;
@@ -995,7 +996,7 @@ setfullscreen(Client *c, int fullscreen)
 		XRaiseWindow(dpy, c->win);
 	} else if (!fullscreen && c->isfullscreen) {
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-				PropModeReplace, (unsigned char *)0, 0);
+				PropModeReplace, (unsigned char *) 0, 0);
 		c->isfullscreen = 0;
 		c->isfloating = c->oldstate;
 		c->bw = c->oldbw;
@@ -1065,14 +1066,14 @@ setup(void)
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
-			PropModeReplace, (unsigned char *)&wmcheckwin, 1);
+			PropModeReplace, (unsigned char *) &wmcheckwin, 1);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMName], utf8string, 8,
-			PropModeReplace, (unsigned char *)"dwm", 3);
+			PropModeReplace, (unsigned char *) "dwm", 3);
 	XChangeProperty(dpy, root, netatom[NetWMCheck], XA_WINDOW, 32,
-			PropModeReplace, (unsigned char *)&wmcheckwin, 1);
+			PropModeReplace, (unsigned char *) &wmcheckwin, 1);
 	/* EWMH support per view */
 	XChangeProperty(dpy, root, netatom[NetSupported], XA_ATOM, 32,
-			PropModeReplace, (unsigned char *)netatom, NetLast);
+			PropModeReplace, (unsigned char *) netatom, NetLast);
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select events */
 	pdebug("before cursor\n");
@@ -1131,7 +1132,7 @@ unmanage(Client *c, int destroyed)
 	Monitor *m = c->mon;
 	XWindowChanges wc;
 
-	printf("%s(%p, %d)\n", __func__, (void *)c, destroyed);
+	printf("%s(%p, %d)\n", __func__, (void *) c, destroyed);
 	detach(c);
 	if (!destroyed) {
 		wc.border_width = c->oldbw;
@@ -1193,11 +1194,11 @@ updatebars(void)
 static void
 client_list_update(void *data, void *storage)
 {
-	struct Client *c = (struct Client *)data;
+	struct Client *c = (struct Client *) data;
 
 	XChangeProperty(dpy, root, netatom[NetClientList],
 			XA_WINDOW, 32, PropModeAppend,
-			(unsigned char *)&(c->win), 1);
+			(unsigned char *) &(c->win), 1);
 }
 
 void
@@ -1238,8 +1239,8 @@ static void update_mons_with_new(void *data, void *storage)
 static bool
 monitor_has_tagview(void *monitor, void *tagview)
 {
-	struct Monitor *m = (struct Monitor *)monitor;
-	struct tagview *tv = (struct tagview *)tagview;
+	struct Monitor *m = (struct Monitor *) monitor;
+	struct tagview *tv = (struct tagview *) tagview;
 
 	return m->tagview == tv;
 }
@@ -1397,8 +1398,8 @@ updatesizehints(Client *c)
 		c->minw = c->minh = 0;
 	}
 	if (size.flags & PAspect) {
-		c->mina = (float)size.min_aspect.y / size.min_aspect.x;
-		c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
+		c->mina = (float) size.min_aspect.y / size.min_aspect.x;
+		c->maxa = (float) size.max_aspect.x / size.max_aspect.y;
 	} else {
 		c->maxa = c->mina = 0.0;
 	}

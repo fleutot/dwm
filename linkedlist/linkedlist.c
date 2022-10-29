@@ -79,12 +79,14 @@ void list_rm(struct list *l, void *data)
 		}
 		if (!n || !n->next) {
 			// Not found.
+			printf("%s: not found\n", __func__);
 			return;
 		}
 		to_remove = n->next;
 		n->next = n->next->next;
 	}
 
+	printf("%s: removing\n", __func__);
 
 	if (l->selected == to_remove) {
 		l->selected = NULL;
@@ -253,7 +255,7 @@ void *list_prev_select(struct list *l)
 
 void *list_selected_data_get(struct list *list)
 {
-	printf("list: selected data get\n"); fflush(stdout);
+	printf("%s\n", __func__); fflush(stdout);
 	if (list == NULL || list->selected == NULL) {
 		printf("list: null\n"); fflush(stdout);
 		return NULL;
