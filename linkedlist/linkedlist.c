@@ -258,8 +258,11 @@ void *list_next_select(struct list *list)
 {
 	if (list->selected == NULL) {
 		list->selected = list->head;
-	} else {
+	} else if (list->selected->next != NULL) {
 		list->selected = list->selected->next;
+	} else {
+		// End of list: don't modify selected but report with NULL.
+		return NULL;
 	}
 
 	return list->selected == NULL ? NULL : list->selected->data;
