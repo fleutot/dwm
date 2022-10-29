@@ -411,11 +411,11 @@ enternotify(const XEvent *e)
 	struct Client *sel_client = mon_selected_client_get(selmon);
 
 	if (m != selmon) {
-		client_unfocus(sel_client, 1);
 		selmon = m;
 	} else if (!c || c == sel_client) {
 		return;
 	}
+	client_unfocus(sel_client, true);
 	client_focus(c);
 }
 

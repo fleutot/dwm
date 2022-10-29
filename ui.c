@@ -37,10 +37,12 @@ focusmon(const Arg *arg)
 void
 focusstack(const Arg *arg)
 {
-	Client *c = NULL;
+	Client *c = mon_selected_client_get(selmon);
 
-	if (mon_selected_client_get(selmon) == NULL)
+	if (c == NULL)
 		return;
+
+	client_unfocus(c, false);
 
 	if (arg->i > 0) {
 		c = list_next_select(&selmon->tagview->clients);
@@ -240,6 +242,9 @@ setmfact(const Arg *arg)
 	f = arg->f < 1.0 ? arg->f + selmon->mfact : arg->f - 1.0;
 	if (f < 0.05 || f > 0.95)
 		return;
+	/// TODO: this must go to the layout config of the current
+	/// tagview instead. Maybe requires a common config format for
+	/// all layouts?
 	selmon->mfact = f;
 	arrange(selmon);
 }

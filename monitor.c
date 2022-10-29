@@ -76,6 +76,10 @@ configure_client_w_changes(void *client, void *storage)
 	win_changes->sibling = c->win;
 }
 
+
+/// What does this do? Is this stack for selection history, go back to
+/// previous selection? Or is stack something else in this context? Z
+/// order?
 void
 restack(struct Monitor *m)
 {
@@ -89,8 +93,11 @@ restack(struct Monitor *m)
 	c = tagview_selected_client_get(m->tagview);
 	if (c == NULL)
 		return;
-	if (c->isfloating || (m->tagview->arrange == NULL))
+	if (c->isfloating || (m->tagview->arrange == NULL)) {
+		/// Should raise tiled windows as well, for the sake
+		/// of painting shadows?
 		XRaiseWindow(dpy, c->win);
+	}
 	if (m->tagview->arrange != NULL) {
 		win_changes.stack_mode = Below;
 		win_changes.sibling = m->barwin;
