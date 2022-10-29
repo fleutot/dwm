@@ -3,13 +3,25 @@
 
 include config.mk
 
+ROOT = $(shell git rev-parse --show-toplevel)
+
+CFLAGS += -ggdb -Og
+
+CFLAGS += \
+	-I$(ROOT) \
+	-I$(ROOT)/layouts
+
 SRC = \
+	bar_none.c \
 	client.c \
 	config.c \
+	dm_x11.c \
 	drw.c \
 	dwm.c \
+	layouts/layout_two_cols.c \
 	linkedlist/linkedlist.c \
 	monitor.c \
+	tagview.c \
 	ui.c \
 	util.c
 

@@ -1,11 +1,14 @@
 /* See LICENSE file for copyright and license details. */
 /* This file defines much data, it should be a .c file rather then .h */
-
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include "client.h"
 #include "input.h"
 #include "ui.h"
 #include "util.h"
+
+#define LAYOUT_DEFAULT layout_two_cols_arrange
 
 /* appearance */
 extern const unsigned int borderpx;      /* border pixel of windows */
@@ -20,7 +23,8 @@ extern const char *colors[][3];
 extern const int num_colors;
 
 /* tagging */
-extern const char *tags[];
+#define NUMBER_OF_TAGS 10
+extern const char *tags[NUMBER_OF_TAGS];
 extern const int num_tags;
 extern const unsigned int tag_mask;
 
@@ -31,9 +35,6 @@ extern const int num_rules;
 extern const float mfact;           /* factor of master area size [0.05..0.95] */
 extern const int nmaster;           /* number of clients in master area */
 extern const int resizehints;       /* 1 means respect size hints in tiled resizals */
-
-extern const Layout layouts[];
-extern const int num_layouts;
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char *[]){ "/bin/sh", "-c", cmd, NULL } }
@@ -51,3 +52,5 @@ extern const int num_keys;
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 extern Button buttons[];
 extern const int num_buttons;
+
+#endif

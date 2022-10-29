@@ -1,7 +1,3 @@
-/*----------------------------------------------------------------------------
-Copyright (c) 2013 Gauthier Fleutot Ostervall
-----------------------------------------------------------------------------*/
-
 #ifndef LINKEDLIST_H_INCLUDED
 #define LINKEDLIST_H_INCLUDED
 
@@ -9,31 +5,34 @@ Copyright (c) 2013 Gauthier Fleutot Ostervall
 #include <stddef.h>
 
 // Sizes are saved as int, make sure this MAX_SIZE is under INT_MAX.
-#define LINKEDLIST_MAX_SIZE (5000U)
+#define LIST_MAX_SIZE (5000U)
 
 struct ll_node;
 
 // TODO: this struct should not be exposed, but kept private in the c file, and
 // only anonymous here. Exposing it now for hacking other functions
 // (e.g. drawbar), because the need should disappear when tagviews are
-// implemented. When that occurs, the struct definition can move back to the c
-// file.
+// implemented. When that occurs, the struct ll_node definition can move back to
+// the c file.
 struct ll_node {
-    void *data;
-    struct ll_node *next;
+	void *data;
+	struct ll_node *next;
 };
 
-struct linkedlist {
-    int size;
-    struct ll_node *head;
-    struct ll_node *selected;
+struct list {
+	int size;
+	struct ll_node *head;
+	// An ll_node* is maybe not very interesting, would pointer to the
+	// selected *data be more interesting? A pointer to the ll_node is
+	// nice, to add a new client to the list.
+	struct ll_node *selected;
 };
 
-#define LINKEDLIST_EMPTY (struct linkedlist) {  \
-        .size = 0,                              \
-            .head = NULL,                       \
-            .selected = NULL                    \
-            }
+#define LIST_EMPTY (struct list) {  \
+		.size = 0,                              \
+		.head = NULL,                       \
+		.selected = NULL                    \
+}
 
 //  ----------------------------------------------------------------------------
 /// \brief  Link a new element at the end of the destination list.
@@ -42,15 +41,15 @@ struct linkedlist {
 /// \attention  The data object pointed to by data must be allocated
 /// dynamically. Addresses to auto or global variables may not be used.
 //  ----------------------------------------------------------------------------
-void linkedlist_add(struct linkedlist *l, void *data);
+void list_add(struct list *l, void *data);
 
 /// \brief  Link a new element at the start of the destination list.
-/// \param  l  Destination list.
+/// \param  list  Destination list.
 /// \param  data  Pointer to the data content of the new node.
 /// \attention  The data object pointed to by data must be allocated
 /// dynamically. Addresses to auto or global variables may not be used.
 //  ----------------------------------------------------------------------------
-void linkedlist_prepend(struct linkedlist *list, void *data);
+void list_prepend(struct list *list, void *data);
 
 //  ----------------------------------------------------------------------------
 /// \brief  Link a new element at the place of the `at` element.
@@ -61,9 +60,17 @@ void linkedlist_prepend(struct linkedlist *list, void *data);
 /// \attention  The data object pointed to by data must be allocated
 /// dynamically. Addresses to auto or global variables may not be used.
 //  ----------------------------------------------------------------------------
-void linkedlist_add_before(struct linkedlist *l, void *at, void *data);
+void list_add_before(struct list *l, void *at, void *data);
 
-void linkedlist_rm(struct linkedlist *l, void *data);
+void list_rm(struct list *l, void *data);
+
+/// ----------------------------------------------------------------------------
+/// \brief Pop the last element of the list. The list node gets freed,
+/// but the caller is responsible for freeing the data itself.
+/// \param  list The list to pop from.
+/// \return A pointer to the data, so that the caller can free it.
+// ----------------------------------------------------------------------------
+void *list_pop(struct list *l);
 
 // ----------------------------------------------------------------------------
 /// \brief Destroy the list passed as parameter. Only the list and its nodes are
@@ -71,20 +78,40 @@ void linkedlist_rm(struct linkedlist *l, void *data);
 /// (probably before destroying the list itself).
 /// \param list The list to destroy.
 // ----------------------------------------------------------------------------
-void linkedlist_destroy(struct linkedlist *l);
+void list_destroy(struct list *l);
 
 //  ----------------------------------------------------------------------------
 /// \brief  Run the callback function passed as parameter on the data of all
 /// nodes in the list passed as parameter. The callback may modify the data,
 /// since the data itself is held by the client module.
 /// \param  list The list to run the callback on.
-/// \param  callback Function pointer to the function to run on data.
+/// \param  callback Function pointer to the function to run on data
+/// in each list element.
+/// \param  storage Extra data to give the callback.
 //  ----------------------------------------------------------------------------
-void linkedlist_run_for_all(struct linkedlist *l,
-                            void (*callback)(void *data));
+void list_run_for_all(
+	struct list *l,
+	void (*callback)(void *data, void *storage),
+	void *storage);
 
-void linkedlist_next_select(struct linkedlist *l);
-void *linkedlist_selected_data_get(struct linkedlist *l);
+//  ----------------------------------------------------------------------------
+/// \brief Find the data for which the callback is true.
+/// \param  list The list to traverse.
+/// \param  callback The function that returns true if found
+/// \param  storage Extra data passed to callback
+/// \return Pointer to the data found. NULL if not found.
+//  ----------------------------------------------------------------------------
+void *list_find(
+	struct list *l,
+	bool (*callback)(void *data, void *storage),
+	void *storage);
+
+void list_select(struct list *list, const void *data);
+void *list_head_select(struct list *list);
+void *list_tail_select(struct list *l);
+void *list_next_select(struct list *l);
+void *list_prev_select(struct list *l);
+void *list_selected_data_get(struct list *l);
 
 //  ----------------------------------------------------------------------------
 /// \brief  Get the pointer to the data of the node at position. If position
@@ -93,13 +120,14 @@ void *linkedlist_selected_data_get(struct linkedlist *l);
 /// \param  list The list to explore.
 /// \param  position The index to the node of interest.
 //  ----------------------------------------------------------------------------
-void *linkedlist_data_handle_get(struct linkedlist *l,
-                                 unsigned int const position);
+void *list_data_handle_get(
+	struct list *l,
+	unsigned int const position);
 
 
 //  ----------------------------------------------------------------------------
 /// \brief Get the size of the list passed as parameter.
 //  ----------------------------------------------------------------------------
-int linkedlist_size_get(struct linkedlist *l);
+int list_size_get(const struct list *l);
 
 #endif // LINKEDLIST_H_INCLUDED
