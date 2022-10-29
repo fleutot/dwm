@@ -2,10 +2,10 @@
 #define UI_H
 
 typedef union {
-	int          i;
+	int i;
 	unsigned int ui;
-	float        f;
-	const void   *v;
+	float f;
+	const void *v;
 } Arg;
 
 void focusmon(const Arg *arg);
@@ -25,6 +25,6 @@ void togglefloating(const Arg *arg);
 void toggletag(const Arg *arg);
 void toggleview(const Arg *arg);
 void view(const Arg *arg);
-void zoom(const Arg *arg);
+void to_master_send(const Arg *arg);
 
 #endif
