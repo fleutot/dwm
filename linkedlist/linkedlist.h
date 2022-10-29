@@ -106,7 +106,7 @@ void *list_find(
 	bool (*callback)(void *data, void *storage),
 	void *storage);
 
-void list_select(struct list *list, void *data);
+void list_select(struct list *list, const void *data);
 void *list_head_select(struct list *list);
 void *list_tail_select(struct list *l);
 void *list_next_select(struct list *l);

@@ -15,6 +15,7 @@ SRC = \
 	bar_none.c \
 	client.c \
 	config.c \
+	dm_x11.c \
 	drw.c \
 	dwm.c \
 	layouts/layout_two_cols.c \

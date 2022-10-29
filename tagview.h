@@ -35,11 +35,15 @@ struct tagview {
 void tagview_init(void);
 void tagview_layout_set(struct tagview *t, enum layout_index layout);
 void tagview_arrange(struct Monitor *m);
+
 void tagview_add_client(struct tagview *t, Client *c);
 void tagview_prepend_client(struct tagview *t, Client *c);
 struct Client *tagview_next_client_select(struct tagview *t);
 struct Client *tagview_selected_client_get(struct tagview *t);
+void tagview_selected_client_set(struct tagview *t, const struct Client *c);
+
 void tagview_run_for_all_tv_all_clients(void (*callback)(void *data, void *storage));
+
 struct Client *tagview_find_window_client(Window *w);
 
 struct tagview *tagview_get(int index);

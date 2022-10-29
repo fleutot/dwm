@@ -1,6 +1,7 @@
 #ifndef BAR_H
 #define BAR_H
 
+#include "linkedlist/linkedlist.h"
 #include "monitor.h"
 
 enum bar_zone {
@@ -23,5 +24,9 @@ enum bar_zone bar_x_to_zone(int x);
 
 
 void bar_draw(struct Monitor *m);
+
+void bar_draw_all_mons(struct list *mons);
+
+void bar_status_update(void);
 
 #endif

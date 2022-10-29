@@ -29,9 +29,9 @@ focusmon(const Arg *arg)
 	m = dirtomon(arg->i);
 	if (m == selmon)
 		return;
-	unfocus(mon_selected_client_get(selmon), 0);
+	client_unfocus(mon_selected_client_get(selmon), 0);
 	selmon = m;
-	focus(NULL);
+	client_focus(NULL);
 }
 
 void
@@ -54,7 +54,7 @@ focusstack(const Arg *arg)
 		}
 	}
 	if (c) {
-		focus(c);
+		client_focus(c);
 		restack(selmon);
 	}
 }
@@ -70,6 +70,7 @@ void
 killclient(const Arg *arg)
 {
 	struct Client *c = mon_selected_client_get(selmon);
+
 	if (c == NULL) {
 		return;
 	}
@@ -143,7 +144,7 @@ movemouse(const Arg *arg)
 	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
 		selmon = m;
-		focus(NULL);
+		client_focus(NULL);
 	}
 }
 
@@ -207,7 +208,7 @@ resizemouse(const Arg *arg)
 	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
 		selmon = m;
-		focus(NULL);
+		client_focus(NULL);
 	}
 }
 
@@ -219,7 +220,7 @@ setlayout(const Arg *arg)
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
-		selmon->lt[selmon->sellt] = (Layout *)arg->v;
+		selmon->lt[selmon->sellt] = (Layout *) arg->v;
 	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
 	if (selmon->tagview->active_client)
 		arrange(selmon);
@@ -251,8 +252,8 @@ spawn(const Arg *arg)
 		if (dpy)
 			close(ConnectionNumber(dpy));
 		setsid();
-		execvp(((char **)arg->v)[0], (char **)arg->v);
-		fprintf(stderr, "dwm: execvp %s", ((char **)arg->v)[0]);
+		execvp(((char **) arg->v)[0], (char **) arg->v);
+		fprintf(stderr, "dwm: execvp %s", ((char **) arg->v)[0]);
 		perror(" failed");
 		exit(EXIT_SUCCESS);
 	}
@@ -360,7 +361,7 @@ toggleview(const Arg *arg)
 
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
-		focus(NULL);
+		client_focus(NULL);
 		arrange(selmon);
 	}
 }
@@ -373,7 +374,7 @@ view(const Arg *arg)
 	selmon->seltags ^= 1; /* toggle sel tagset */
 	if (arg->ui & tag_mask)
 		selmon->tagset[selmon->seltags] = arg->ui & tag_mask;
-	focus(NULL);
+	client_focus(NULL);
 	arrange(selmon);
 }
 

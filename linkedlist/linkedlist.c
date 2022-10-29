@@ -177,7 +177,7 @@ void *list_find(
 	return found_data;
 }
 
-void list_select(struct list *list, void *data)
+void list_select(struct list *list, const void *data)
 {
 	struct ll_node *n;
 

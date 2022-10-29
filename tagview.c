@@ -86,6 +86,11 @@ Client *tagview_selected_client_get(struct tagview *t)
 	return (Client *) list_selected_data_get(&t->clients);
 }
 
+void tagview_selected_client_set(struct tagview *t, const struct Client *c)
+{
+	list_select(&t->clients, c);
+}
+
 void tagview_run_for_all_tv_all_clients(
 	void (*callback)(void *data, void *storage))
 {
