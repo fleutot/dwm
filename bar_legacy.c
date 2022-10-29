@@ -19,7 +19,7 @@ bar_x_to_zone(int x)
 		arg.ui = 1 << i;
 	} else if (ev->x < x + blw) {
 		zone = BAR_ZONE_LAYOUT;
-	} else if (ev->x > selmon->ww - ((int)drw_fontset_getwidth(drw, stext) + lrpad)) {
+	} else if (ev->x > selmon->ww - ((int) drw_fontset_getwidth(drw, stext) + lrpad)) {
 		zone = BAR_ZONE_STATUS;
 	} else {
 		zone = BAR_ZONE_WIN_TITLE;

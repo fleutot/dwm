@@ -10,6 +10,10 @@
 //******************************************************************************
 // Module constants
 //******************************************************************************
+enum placement {
+	BEFORE,
+	AFTER
+};
 
 //******************************************************************************
 // Module variables
@@ -19,6 +23,12 @@
 // Function prototypes
 //******************************************************************************
 static struct ll_node *nodes_walker(struct ll_node *start, int pos);
+
+static void list_insert_node(
+	struct list *list,
+	enum placement placement,
+	struct ll_node *at,
+	void *data);
 
 //******************************************************************************
 // Function definitions
@@ -30,20 +40,38 @@ static struct ll_node *nodes_walker(struct ll_node *start, int pos);
 /// @attention  The data object must be dynamically allocated since the list's
 /// remove functions use free() on data objects.
 //  ----------------------------------------------------------------------------
+
 void list_add(struct list *list, void *data)
 {
-	list_add_before(list, NULL, data);
+	list_insert_node(list, BEFORE, NULL, data);
 }
 
 void list_prepend(struct list *list, void *data)
 {
-	list_add_before(list, list->head, data);
+	list_insert_node(list, BEFORE, list->head, data);
 }
 
 void list_add_before(struct list *list, void *at, void *data)
 {
+	struct ll_node *n;
+
+	for (
+		n = list->head;
+		n != NULL && n->next != NULL && n->next->data != at;
+		n = n->next) {
+	}
+	list_insert_node(list, AFTER, n, data);
+}
+
+static void list_insert_node(
+	struct list *list,
+	enum placement placement,
+	struct ll_node *at,
+	void *data)
+{
 	struct ll_node *node = malloc(sizeof(struct ll_node));
 
+	assert(node);
 	*node = (struct ll_node) {
 		.data = data,
 		.next = NULL
@@ -52,11 +80,21 @@ void list_add_before(struct list *list, void *at, void *data)
 	if (list->head == NULL || list->size == 0) {
 		list->head = node;
 		list->size = 1;
+	} else if ((at == list->head) && (placement == BEFORE)) {
+		node->next = list->head;
+		list->head = node;
+		list->size++;
 	} else {
-		// Walk to the last node, or before node `at`.
-		struct ll_node *n = list->head;
-		while (n->next != NULL && n->next->data != at) {
-			n = n->next;
+		struct ll_node *n;
+		if (placement == BEFORE) {
+			// Walk to the last node, or before node `at`.
+			for (n = list->head;
+			     n->next != NULL && n->next != at;
+			     n = n->next) {
+			}
+		} else {
+			// placement == AFTER
+			n = at;
 		}
 		node->next = n->next;
 		n->next = node;

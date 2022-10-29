@@ -21,8 +21,8 @@ struct positioning {
 
 static void client_position_apply(void *client, void *storage)
 {
-	struct Client *c = (struct Client *)client;
-	struct positioning *p = (struct positioning *)storage;
+	struct Client *c = (struct Client *) client;
+	struct positioning *p = (struct positioning *) storage;
 
 	if (p->current_client_index < p->n_masters) {
 		// Master area

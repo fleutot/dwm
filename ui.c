@@ -384,8 +384,7 @@ view(const Arg *arg)
 }
 
 /// Zoom is "send to master"?
-void
-zoom(const Arg *arg)
+void to_master_send(const Arg *arg)
 {
 	struct Client *c = mon_selected_client_get(selmon);
 
