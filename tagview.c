@@ -60,14 +60,12 @@ void tagview_add_client(struct tagview *t, Client *c)
 {
 	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
 	list_add_before(&t->clients, t->clients.selected->data, c);
-	list_select(&t->clients, c);
 }
 
 void tagview_prepend_client(struct tagview *t, Client *c)
 {
 	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
 	list_prepend(&t->clients, c);
-	list_select(&t->clients, c);
 }
 
 Client *tagview_next_client_select(struct tagview *t)

@@ -379,15 +379,22 @@ destroynotify(const XEvent *e)
 void detach(Client *c)
 {
 	printf("%s(%p)\n", __func__, (void *) c);
-	struct Client *new_selected_c = list_next_select(&c->mon->tagview->clients);
+	struct Client *new_selected_c = mon_selected_client_get(c->mon);
+	if (c == new_selected_c) {
+		new_selected_c = list_next_select(&c->mon->tagview->clients);
+	}
+	if (c == new_selected_c) {
+		new_selected_c = list_prev_select(&c->mon->tagview->clients);
+	}
+	if (c == new_selected_c) {
+		new_selected_c = NULL;
+	}
 
 	list_rm(&c->mon->tagview->clients, c);
 
 	if (new_selected_c == NULL) {
 		// The list head might be NULL
 		list_head_select(&c->mon->tagview->clients);
-	} else {
-		list_select(&c->mon->tagview->clients, new_selected_c);
 	}
 }
 

@@ -224,12 +224,12 @@ void list_select(struct list *list, const void *data)
 	     n = n->next) {
 	}
 
-	if (n->data == data) {
-		printf("%s: data found\n", __func__);
-		list->selected = n;
-	} else {
+	if (n == NULL) {
 		printf("%s: data not found\n", __func__);
+		return;
 	}
+	printf("%s: data found\n", __func__);
+	list->selected = n;
 }
 
 void *list_head_select(struct list *list)
@@ -306,12 +306,9 @@ void *list_prev_wrap_select(struct list *l)
 
 void *list_selected_data_get(struct list *list)
 {
-	printf("%s\n", __func__); fflush(stdout);
 	if (list == NULL || list->selected == NULL) {
-		printf("list: null\n"); fflush(stdout);
 		return NULL;
 	}
-	printf("list: data here\n"); fflush(stdout);
 	return list->selected->data;
 }
 
