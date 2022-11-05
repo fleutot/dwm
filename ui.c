@@ -27,9 +27,10 @@ focusmon(const Arg *arg)
 		return;
 #endif
 	m = dirtomon(arg->i);
+	printf("%s: m = %p\n", __func__, (void *) m);
 	if (m == selmon)
 		return;
-	client_unfocus(mon_selected_client_get(selmon), 0);
+	client_unfocus(mon_selected_client_get(selmon), false);
 	selmon = m;
 	client_focus(NULL);
 }
@@ -45,12 +46,12 @@ focusstack(const Arg *arg)
 	client_unfocus(c, false);
 
 	if (arg->i > 0) {
-		c = list_next_select(&selmon->tagview->clients);
+		c = list_next_wrap_select(&selmon->tagview->clients);
 		if (c == NULL) {
 			c = list_head_select(&selmon->tagview->clients);
 		}
 	} else {
-		c = list_prev_select(&selmon->tagview->clients);
+		c = list_prev_wrap_select(&selmon->tagview->clients);
 		if (c == NULL) {
 			c = list_tail_select(&selmon->tagview->clients);
 		}

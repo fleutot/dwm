@@ -248,13 +248,21 @@ static void test_list_next_prev(void)
 	assert(*read_back == 3);
 
 	read_back = list_next_select(&list);
-	assert(read_back == NULL);
-	assert(*(int *) (list_selected_data_get(&list)) == 3);
+	assert(*read_back == 3);
 
 	read_back = list_prev_select(&list);
 	assert(*read_back == 2);
 
 	read_back = list_prev_select(&list);
+	assert(*read_back == 1);
+
+	read_back = list_prev_select(&list);
+	assert(*read_back == 1);
+
+	read_back = list_prev_wrap_select(&list);
+	assert(*read_back == 3);
+
+	read_back = list_next_wrap_select(&list);
 	assert(*read_back == 1);
 
 	struct list empty_list = LIST_EMPTY;

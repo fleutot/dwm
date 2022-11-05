@@ -72,12 +72,12 @@ void tagview_prepend_client(struct tagview *t, Client *c)
 
 Client *tagview_next_client_select(struct tagview *t)
 {
-	return list_next_select(&t->clients);
+	return list_next_wrap_select(&t->clients);
 }
 
 Client *tagview_prev_client_select(struct tagview *t)
 {
-	return list_prev_select(&t->clients);
+	return list_prev_wrap_select(&t->clients);
 }
 
 Client *tagview_selected_client_get(struct tagview *t)

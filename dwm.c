@@ -676,6 +676,7 @@ scan(void)
 	Window d1, d2, *wins = NULL;
 	XWindowAttributes wa;
 
+	/// TODO: should this be protected by XGrabServer()?
 	if (XQueryTree(dpy, root, &d1, &d2, &wins, &num)) {
 		for (i = 0; i < num; i++) {
 			if (!XGetWindowAttributes(dpy, wins[i], &wa)
@@ -694,6 +695,7 @@ scan(void)
 		if (wins)
 			XFree(wins);
 	}
+	/// TODO: should this be unprotected by XUngrabServer()?
 }
 
 void
@@ -997,10 +999,9 @@ updategeom(void)
 			pdebug("updategeom: new monitors\n");
 			/* More monitors available */
 			for (i = mons.size; i < new_num_mons; i++) {
-				pdebug(".");
+				printf("  create mon with tagview %p\n", (void *) undisplayed_tagview_get());
 				list_add(&mons, createmon(undisplayed_tagview_get()));
 			}
-			pdebug("\n");
 			struct xinerama_screen_info screen_info = {
 				.unique = unique,
 				.size = new_num_mons
@@ -1151,7 +1152,7 @@ main(int argc, char *argv[])
 	if (pledge("stdio rpath proc exec", NULL) == -1)
 		die("pledge");
 #endif /* __OpenBSD__ */
-	scan();
+	scan(); /// Find existing windows and create clients for them.
 	run();
 	cleanup();
 	XCloseDisplay(dpy);

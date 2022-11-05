@@ -260,9 +260,6 @@ void *list_next_select(struct list *list)
 		list->selected = list->head;
 	} else if (list->selected->next != NULL) {
 		list->selected = list->selected->next;
-	} else {
-		// End of list: don't modify selected but report with NULL.
-		return NULL;
 	}
 
 	return list->selected == NULL ? NULL : list->selected->data;
@@ -274,24 +271,37 @@ void *list_prev_select(struct list *l)
 	    || l->head->next == NULL
 	    || l->selected == NULL) {
 		l->selected = l->head;
-		return l->selected == NULL ? NULL : l->selected->data;
-	}
-
-	if (l->head == l->selected) {
+	} else if (l->head == l->selected) {
 		// Don't wrap around if the head is selected. Then
 		// there is no previous.
-		return NULL;
+	} else {
+		struct ll_node *n;
+		for (n = l->head;
+		     n->next != l->selected && n->next != NULL;
+		     n = n->next) {
+		}
+		l->selected = n;
 	}
 
+	return l->selected == NULL ? NULL : l->selected->data;
+}
 
-	struct ll_node *n;
-	for (n = l->head;
-	     n->next != l->selected && n->next != NULL;
-	     n = n->next) {
+void *list_next_wrap_select(struct list *l)
+{
+	if (l->selected && l->selected->next == NULL) {
+		return list_head_select(l);
+	} else {
+		return list_next_select(l);
 	}
+}
 
-	l->selected = n;
-	return l->selected->data;
+void *list_prev_wrap_select(struct list *l)
+{
+	if (l->selected && l->selected == l->head) {
+		return list_tail_select(l);
+	} else {
+		return list_prev_select(l);
+	}
 }
 
 void *list_selected_data_get(struct list *list)

@@ -1,3 +1,11 @@
+owm - a clone of dwm
+====================
+
+Very much work in progress.
+
+TODO:
+- consider using `XAddToSaveSet`
+
 dwm - dynamic window manager
 ============================
 dwm is an extremely fast, small, and dynamic window manager for X.
