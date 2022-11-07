@@ -87,6 +87,20 @@ void client_create(Window w, XWindowAttributes *wa)
 	client_focus(c);
 }
 
+void client_hide(void *client, void *storage)
+{
+	struct Client *c = (struct Client *) client;
+
+	XUnmapWindow(dpy, c->win);
+}
+
+void client_show(void *client, void *storage)
+{
+	struct Client *c = (struct Client *) client;
+
+	XMapWindow(dpy, c->win);
+}
+
 void client_name_update(Client *c)
 {
 	if (!dm_gettextprop(c->win, netatom[NetWMName], c->name, sizeof c->name))
@@ -321,7 +335,7 @@ showhide(Client *c)
 	if (isvisible(c)) {
 		/* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
-		if ((!c->mon->tagview->layout->arrange || c->isfloating)
+		if ((!c->mon->tagview->arrange || c->isfloating)
 		    && !c->isfullscreen)
 			resize(c, c->x, c->y, c->w, c->h, 0);
 		showhide(c->snext);

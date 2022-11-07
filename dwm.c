@@ -223,7 +223,7 @@ cleanup(void)
 	Arg a = { .ui = ~0 };
 	size_t i;
 
-	view(&a);
+	tag_view(&a);
 	// TODO: free the monitors, clients, layouts, tagviews, ...
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
 	list_run_for_all(&mons, cleanupmon, NULL);
@@ -880,10 +880,14 @@ unmapnotify(const XEvent *e)
 	const XUnmapEvent *ev = &e->xunmap;
 
 	if ((c = wintoclient(ev->window))) {
-		if (ev->send_event)
+		if (ev->send_event) {
+			/// Not sure when this might be used
 			client_state_set(c, WithdrawnState);
-		else
-			unmanage(c, 0);
+		} else {
+			/// Do nothing.	Unmap is only to hide a
+			/// window, that does not mean that the client
+			/// should die.
+		}
 	}
 }
 

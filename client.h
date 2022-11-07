@@ -40,6 +40,10 @@ void client_create(Window w, XWindowAttributes *wa);
 void client_focus(struct Client *c);
 void client_unfocus(struct Client *c, bool focus_root);
 
+// This signature must match that of the callback in list_run_for_all
+void client_hide(void *client, void *storage);
+void client_show(void *client, void *storage);
+
 void client_urgent_set(struct Client *c, bool is_urgent);
 
 void client_name_update(Client *c);

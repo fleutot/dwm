@@ -12,11 +12,11 @@ enum layout_index {
 };
 
 struct tagview {
+	int index;
+
 	// Tagview still own the clients, would be an improvement to
 	// flatten the ownersip hierarchy further?
 	struct list clients;
-
-	struct layout *layout;
 
 	// Each tagview must have separate layout configs for each
 	// available layout.
@@ -35,6 +35,8 @@ struct tagview {
 void tagview_init(void);
 void tagview_layout_set(struct tagview *t, enum layout_index layout);
 void tagview_arrange(struct Monitor *m);
+void tagview_hide(struct tagview *tv);
+void tagview_show(struct tagview *tv, struct Monitor *m);
 
 void tagview_add_client(struct tagview *t, Client *c);
 void tagview_prepend_client(struct tagview *t, Client *c);
@@ -46,7 +48,7 @@ void tagview_run_for_all_tv_all_clients(void (*callback)(void *data, void *stora
 
 struct Client *tagview_find_window_client(Window *w);
 
-struct tagview *tagview_get(int index);
+struct tagview *tagview_get(unsigned int index);
 
 // TODO
 // void tagview_client_select(int direction);

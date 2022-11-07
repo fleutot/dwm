@@ -38,6 +38,17 @@ void mon_selected_client_set(struct Monitor *m, struct Client *c)
 	list_select(&m->tagview->clients, c);
 }
 
+void mon_tag_switch(struct Monitor *m, struct tagview *tagview)
+{
+	if (m->tagview == tagview) {
+		return;
+	}
+	tagview_hide(m->tagview);
+	m->tagview = tagview;
+	arrange(m);
+	tagview_show(m->tagview, m);
+}
+
 int area_in_mon(int x, int y, int w, int h, const Monitor *m)
 {
 	return MAX(0,

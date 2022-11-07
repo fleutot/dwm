@@ -3,6 +3,7 @@
 
 #include "tagview.h"
 
+#include "client.h"
 #include "config.h"
 #include "layout.h"
 #include "util.h"
@@ -23,6 +24,7 @@ void tagview_init(void)
 {
 	for (int i = 0; i < LENGTH(tags); i++) {
 		tagviews[i] = (struct tagview) {
+			.index = i,
 			.arrange = LAYOUT_DEFAULT,
 			.layout_cfg = &tagviews[i].layout_cfg_two_cols,
 			.clients = LIST_EMPTY,
@@ -33,6 +35,18 @@ void tagview_init(void)
 			},
 		};
 	}
+}
+
+void tagview_hide(struct tagview *tv)
+{
+	printf("%s, clients size: %d\n", __func__, tv->clients.size);
+	list_run_for_all(&tv->clients, client_hide, NULL);
+}
+
+void tagview_show(struct tagview *tv, struct Monitor *m)
+{
+	tagview_arrange(m);
+	list_run_for_all(&tv->clients, client_show, NULL);
 }
 
 void tagview_arrange(struct Monitor *m)
@@ -103,6 +117,7 @@ static bool window_to_find_is_client(void *c, void *w)
 
 	return ((struct Client *) c)->win == *window_to_find;
 }
+
 struct Client *tagview_find_window_client(Window *w)
 {
 	struct Client *c = NULL;
@@ -120,7 +135,7 @@ struct Client *tagview_find_window_client(Window *w)
 	return NULL;
 }
 
-struct tagview *tagview_get(int index)
+struct tagview *tagview_get(unsigned int index)
 {
 	return &tagviews[index];
 }

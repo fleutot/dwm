@@ -373,18 +373,14 @@ toggleview(const Arg *arg)
 }
 
 void
-view(const Arg *arg)
+tag_view(const Arg *arg)
 {
-	if ((arg->ui & tag_mask) == selmon->tagset[selmon->seltags])
+	if (arg->ui == selmon->tagview->index) {
 		return;
-	selmon->seltags ^= 1; /* toggle sel tagset */
-	if (arg->ui & tag_mask)
-		selmon->tagset[selmon->seltags] = arg->ui & tag_mask;
-	client_focus(NULL);
-	arrange(selmon);
+	}
+	mon_tag_switch(selmon, tagview_get(arg->ui));
 }
 
-/// Zoom is "send to master"?
 void to_master_send(const Arg *arg)
 {
 	struct Client *c = mon_selected_client_get(selmon);
