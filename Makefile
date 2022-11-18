@@ -25,6 +25,12 @@ SRC = \
 	ui.c \
 	util.c
 
+ifeq ($(DEBUG),yes)
+SRC += debug.c
+CFLAGS += -finstrument-functions -DDEBUG
+LDFLAGS += -ldl -rdynamic
+endif
+
 OBJ = ${SRC:.c=.o}
 
 all: options dwm
