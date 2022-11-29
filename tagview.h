@@ -46,7 +46,11 @@ void tagview_selected_client_set(struct tagview *t, const struct Client *c);
 
 void tagview_run_for_all_tv_all_clients(void (*callback)(void *data, void *storage));
 
-struct Client *tagview_find_window_client(Window *w);
+// This searches all tagviews, no parameter needed for tagview to
+// search.
+struct Client *tagviews_find_window_client(Window *w);
+
+struct Client *tagview_find_window_client(struct tagview *tv, Window *w);
 
 struct tagview *tagview_get(unsigned int index);
 

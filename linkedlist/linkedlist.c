@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "debug.h"
+
 //******************************************************************************
 // Module constants
 //******************************************************************************
@@ -14,6 +16,7 @@ enum placement {
 	BEFORE,
 	AFTER
 };
+
 
 //******************************************************************************
 // Module variables
@@ -117,14 +120,14 @@ void list_rm(struct list *l, void *data)
 		}
 		if (!n || !n->next) {
 			// Not found.
-			printf("%s: not found\n", __func__);
+			P_DEBUG("%s: not found\n", __func__);
 			return;
 		}
 		to_remove = n->next;
 		n->next = n->next->next;
 	}
 
-	printf("%s: removing\n", __func__);
+	P_DEBUG("%s: removing\n", __func__);
 
 	if (l->selected == to_remove) {
 		l->selected = NULL;
@@ -194,7 +197,9 @@ void list_run_for_all(
 	if (list == NULL || list->head == NULL) {
 		return;
 	}
+	int i = 0;
 	for (struct ll_node *n = list->head; n != NULL; n = n->next) {
+		P_DEBUG("%s: run callback on element %d\n", __func__, i++);
 		callback(n->data, storage);
 	}
 }
@@ -225,10 +230,10 @@ void list_select(struct list *list, const void *data)
 	}
 
 	if (n == NULL) {
-		printf("%s: data not found\n", __func__);
+		P_DEBUG("%s: data not found\n", __func__);
 		return;
 	}
-	printf("%s: data found\n", __func__);
+	P_DEBUG("%s: data found\n", __func__);
 	list->selected = n;
 }
 

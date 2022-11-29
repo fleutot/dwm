@@ -1,7 +1,8 @@
 #include <stdio.h>
 
-#include "layout_two_cols.h"
+#include "layouts/layout_two_cols.h"
 
+#include "debug.h"
 #include "monitor.h"
 
 struct positioning {
@@ -24,7 +25,9 @@ static void client_position_apply(void *client, void *storage)
 	struct Client *c = (struct Client *) client;
 	struct positioning *p = (struct positioning *) storage;
 
+	P_DEBUG("client index %d\n", p->current_client_index);
 	if (p->current_client_index < p->n_masters) {
+		P_DEBUG("in master area\n");
 		// Master area
 		// TODO: shouldn't Client deal with border width internally?
 		// But that would disallow layouts from managing them...
@@ -36,9 +39,15 @@ static void client_position_apply(void *client, void *storage)
 			p->master_client_h - (2 * c->bw),
 			0
 			);
+		P_DEBUG("(x, y, w, h): (%d, %d, %d, %d)\n",
+			p->master_x,
+			p->current_master_y,
+			p->master_w - (2 * c->bw),
+			p->master_client_h - (2 * c->bw));
 		p->current_master_y += p->master_client_h;
 	} else {
 		// Stack area
+		P_DEBUG("in stack area\n");
 		resize(
 			c,
 			p->master_x + p->master_w,
@@ -47,9 +56,16 @@ static void client_position_apply(void *client, void *storage)
 			p->stack_client_h - (2 * c->bw),
 			0
 			);
+		P_DEBUG("(x, y, w, h): (%d, %d, %d, %d)\n",
+			p->master_x + p->master_w,
+			p->current_stack_y,
+			p->stack_w - (2 * c->bw),
+			p->stack_client_h - (2 * c->bw));
 		p->current_stack_y += p->stack_client_h;
 	}
 	p->current_client_index++;
+
+	/// TODO: why not do client_show here? Instead of in tagview_show.
 #if 0
 	if (i < m->nmaster) {
 		h = (m->wh - my) / (MIN(n, m->nmaster) - i);
@@ -68,13 +84,13 @@ static void client_position_apply(void *client, void *storage)
 
 void layout_two_cols_arrange(void *layout_cfg, struct Monitor *mon)
 {
-	printf("%s\n", __func__);
+	P_DEBUG("m %p mon.xy: (%d, %d)\n", (void *) mon, mon->mx, mon->my);
 	struct layout_cfg_two_cols *cfg = layout_cfg;
 
 	int n_clients = mon_n_clients_get(mon);
 
 	if (n_clients == 0) {
-		printf("%s: no clients\n", __func__);
+		P_DEBUG("no clients\n");
 		return;
 	}
 

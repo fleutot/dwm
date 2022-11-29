@@ -1,6 +1,7 @@
 #include <X11/Xlib.h>
 
 #include "bar.h"
+#include "debug.h"
 #include "drw.h"
 #include "dwm.h"
 #include "client.h"
@@ -45,7 +46,6 @@ void mon_tag_switch(struct Monitor *m, struct tagview *tagview)
 	}
 	tagview_hide(m->tagview);
 	m->tagview = tagview;
-	arrange(m);
 	tagview_show(m->tagview, m);
 }
 
@@ -58,14 +58,23 @@ int area_in_mon(int x, int y, int w, int h, const Monitor *m)
 }
 
 void
-arrange(Monitor *m)
+mon_arrange(Monitor *m)
 {
+	P_DEBUG("%s: %p\n", __func__, (void *) m);
 	if (m) {
 		tagview_arrange(m);
 		restack(m);
 	} else {
-		printf("%s with argument NULL\n", __func__);
+		P_DEBUG("%s with argument NULL\n", __func__);
 	}
+}
+
+bool mon_has_window(void *monitor, void *window)
+{
+	struct Monitor *m = (struct Monitor *) monitor;
+	Window *w = (Window *) window;
+
+	return tagview_find_window_client(m->tagview, w) != NULL;
 }
 
 static void
@@ -96,9 +105,8 @@ restack(struct Monitor *m)
 {
 	Client *c;
 	XEvent ev;
-	XWindowChanges win_changes;
 
-	printf("%s(%p)\n", __func__, (void *) m);
+	P_DEBUG("%s(%p)\n", __func__, (void *) m);
 
 	bar_draw(m);
 	c = tagview_selected_client_get(m->tagview);
@@ -110,6 +118,7 @@ restack(struct Monitor *m)
 		XRaiseWindow(dpy, c->win);
 	}
 	if (m->tagview->arrange != NULL) {
+		XWindowChanges win_changes;
 		win_changes.stack_mode = Below;
 		win_changes.sibling = m->barwin;
 		list_run_for_all(
@@ -122,11 +131,19 @@ restack(struct Monitor *m)
 }
 
 Monitor *
-createmon(struct tagview *with_tagview)
+createmon(struct tagview *with_tagview, int x, int y, int w, int h)
 {
 	Monitor *m;
 
 	m = ecalloc(1, sizeof(Monitor));
+
+	// Not supporting bars yet, so window area is the same as
+	// monitor area
+	m->wx = m->mx = x;
+	m->wy = m->my = y;
+	m->ww = m->mw = w;
+	m->wh = m->mh = h;
+
 	m->showbar = showbar;
 	m->topbar = topbar;
 	m->tagview = with_tagview;

@@ -52,9 +52,8 @@ another VT
 
 In .xinitrc:
 ```
-unset XDG_RUNTIME_DIR && xhost +local: && sleep 120
+unset XDG_RUNTIME_DIR && xhost +local: && tail -f /dev/null
 ```
-(untested: replace the `sleep` with `tail -f /dev/null`, to avoid timing out.)
 
 Then run `startx` from another VT.
 
@@ -63,6 +62,18 @@ From your usual environment, you can now run owm with gdb:
 ```
 DISPLAY=:1 gdb ./dwm
 ```
+
+You can also nest an X within your normal environment. This starts two
+screens with Xinerama:
+
+```
+Xephyr +xinerama +extension RANDR -screen 800x600+0+0 -screen 800x600+800+0 -ac :1&
+```
+Note that `xrandr` fails to detect these as two screens.
+
+Good to know:
+- kill a rogue Xserver on display N: `sudo fuser /tmp/.X11-unix/X<N> -k`
+
 
 Configuration
 -------------

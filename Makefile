@@ -25,6 +25,13 @@ SRC = \
 	ui.c \
 	util.c
 
+DEBUG ?= no
+ifeq ($(DEBUG),yes)
+SRC += debug.c
+CFLAGS += -finstrument-functions -DDEBUG
+LDFLAGS += -ldl -rdynamic
+endif
+
 OBJ = ${SRC:.c=.o}
 
 all: options dwm
@@ -39,9 +46,6 @@ options:
 	${CC} -c ${CFLAGS} $< -o $@
 
 ${OBJ}: config.h config.mk
-
-config.h:
-	cp config.def.h $@
 
 dwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
