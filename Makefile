@@ -25,6 +25,7 @@ SRC = \
 	ui.c \
 	util.c
 
+DEBUG ?= no
 ifeq ($(DEBUG),yes)
 SRC += debug.c
 CFLAGS += -finstrument-functions -DDEBUG
@@ -45,9 +46,6 @@ options:
 	${CC} -c ${CFLAGS} $< -o $@
 
 ${OBJ}: config.h config.mk
-
-config.h:
-	cp config.def.h $@
 
 dwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}

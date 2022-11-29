@@ -1,7 +1,9 @@
+#include <stdio.h>
 #include <X11/Xatom.h>
 #include <unistd.h>
 
 #include "bar.h"
+#include "debug.h"
 #include "dwm.h"
 #include "config.h"
 #include "input.h"
@@ -27,11 +29,15 @@ focusmon(const Arg *arg)
 		return;
 #endif
 	m = dirtomon(arg->i);
-	printf("%s: m = %p\n", __func__, (void *) m);
+	P_DEBUG("%s: selmon = %p,  m = %p\n",
+		__func__,
+		(void *) selmon,
+		(void *) m);
 	if (m == selmon)
 		return;
 	client_unfocus(mon_selected_client_get(selmon), false);
 	selmon = m;
+	mon_arrange(m);
 	client_focus(NULL);
 }
 
@@ -66,7 +72,7 @@ void
 incnmaster(const Arg *arg)
 {
 	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
-	arrange(selmon);
+	mon_arrange(selmon);
 }
 
 void
@@ -247,7 +253,7 @@ setmfact(const Arg *arg)
 	/// tagview instead. Maybe requires a common config format for
 	/// all layouts?
 	selmon->mfact = f;
-	arrange(selmon);
+	mon_arrange(selmon);
 }
 
 void
@@ -368,8 +374,17 @@ toggleview(const Arg *arg)
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
 		client_focus(NULL);
-		arrange(selmon);
+		mon_arrange(selmon);
 	}
+}
+
+
+static bool monitor_shows_tagview_index(void *mon, void *index)
+{
+	const struct Monitor *m = (struct Monitor *) mon;
+	int i = *(int *) index;
+
+	return m->tagview->index == i;
 }
 
 void
@@ -378,7 +393,36 @@ tag_view(const Arg *arg)
 	if (arg->ui == selmon->tagview->index) {
 		return;
 	}
-	mon_tag_switch(selmon, tagview_get(arg->ui));
+
+	int tv_index = arg->ui;
+
+	P_DEBUG("### %s: finding monitor to swap with\n", __func__);
+	struct Monitor *other_m = list_find(
+		&mons,
+		monitor_shows_tagview_index,
+		&tv_index);
+
+	if (other_m != NULL) {
+		P_DEBUG("### %s: swapping tagview on other, tvother:%d, tvselmon:%d\n",
+			__func__,
+			other_m->tagview->index,
+			selmon->tagview->index);
+		/// Must hide first, to avoid attempting to draw the
+		/// window twice?
+		// Switching tag on a monitor hides its current tag
+		/// view. Since this swap makes two switches, the
+		/// second switch might hide the tag view from the
+		/// first switch.
+		tagview_hide(other_m->tagview);
+		tagview_hide(selmon->tagview);
+
+		struct tagview *other_m_new_tagview = selmon->tagview;
+		tagview_show(other_m->tagview, selmon);
+		tagview_show(other_m_new_tagview, other_m);
+	} else {
+		P_DEBUG("### %s: getting tagview %d on selmon\n", __func__, tv_index);
+		mon_tag_switch(selmon, tagview_get(tv_index));
+	}
 }
 
 void to_master_send(const Arg *arg)

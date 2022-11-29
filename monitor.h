@@ -38,14 +38,15 @@ struct Client *mon_selected_client_get(const struct Monitor *m);
 void mon_selected_client_set(struct Monitor *m, struct Client *c);
 
 void mon_tag_switch(struct Monitor *m, struct tagview *tagview);
+void mon_arrange(Monitor *m);
+
+bool mon_has_window(void *monitor, void *window);
 
 int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 
-void arrange(Monitor *m);
-
 void restack(Monitor *m);
 
-Monitor *createmon(struct tagview *with_tagview);
+Monitor *createmon(struct tagview *with_tagview, int x, int y, int w, int h);
 
 void monitor_destruct(struct Monitor *m);
 

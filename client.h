@@ -14,6 +14,10 @@ enum { SchemeNorm, SchemeSel };                         /* color schemes */
 struct Client {
 	char name[256];
 	float mina, maxa;
+
+	/// TODO: clients should not save their geometry, why would
+	/// they? The layouts manage geometries, and update the
+	/// display manager window.
 	int x, y, w, h;
 	int oldx, oldy, oldw, oldh;
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh;
@@ -22,7 +26,10 @@ struct Client {
 	bool isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
 	Client *next;
 	Client *snext;
+
+	/// TODO: obsolete? only tagview know about their current monitor
 	struct Monitor *mon;
+
 	Window win;
 };
 
@@ -40,9 +47,12 @@ void client_create(Window w, XWindowAttributes *wa);
 void client_focus(struct Client *c);
 void client_unfocus(struct Client *c, bool focus_root);
 
-// This signature must match that of the callback in list_run_for_all
+// These signatures must match that of the callback in list_run_for_all
 void client_hide(void *client, void *storage);
 void client_show(void *client, void *storage);
+void client_mon_set(void *client, void *monitor);
+// These signatures must match that of the callback in list_find
+bool client_has_win(void *client, void *window);
 
 void client_urgent_set(struct Client *c, bool is_urgent);
 

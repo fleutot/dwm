@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
 #include "bar.h"
 #include "client.h"
 #include "config.h"
+#include "debug.h"
 #include "dm.h"
 #include "dwm.h"
 #include "util.h"
@@ -29,8 +31,8 @@ static Atom atom_prop_get(Client *c, Atom prop);
 //******************************************************************************
 void client_create(Window w, XWindowAttributes *wa)
 {
-	printf("%s======================================\n", __func__);
-	Client *c, *t = NULL;
+	Client *c = NULL;
+	struct Monitor *m, *mon_from_transient;
 	Window trans = None;
 	XWindowChanges wc;
 
@@ -44,22 +46,26 @@ void client_create(Window w, XWindowAttributes *wa)
 	c->oldbw = wa->border_width;
 
 	client_name_update(c);
-	if (XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
-		c->mon = t->mon;
-		c->tags = t->tags;
+	if (XGetTransientForHint(dpy, w, &trans) && (mon_from_transient = wintomon(trans))) {
+		c->mon = mon_from_transient;
+		m = mon_from_transient;
 	} else {
-		c->mon = selmon;
+		c->mon = selmon; /// TODO: unnecessary?
+		m = selmon;
 		apply_rules(c);
 	}
+	/// TODO: Client creation should not bother about monitors!
+	/// It should create in the current tagview (if not transient?), and let the tagview
+	/// deal with geometry.
 
-	if (c->x + width(c) > c->mon->mx + c->mon->mw)
-		c->x = c->mon->mx + c->mon->mw - width(c);
-	if (c->y + height(c) > c->mon->my + c->mon->mh)
-		c->y = c->mon->my + c->mon->mh - height(c);
-	c->x = MAX(c->x, c->mon->mx);
+	if (c->x + width(c) > m->mx + m->mw)
+		c->x = m->mx + m->mw - width(c);
+	if (c->y + height(c) > m->my + m->mh)
+		c->y = m->my + m->mh - height(c);
+	c->x = MAX(c->x, m->mx);
 	/* only fix client y-offset, if the client center might cover the bar */
-	c->y = MAX(c->y, ((c->mon->by == c->mon->my) && (c->x + (c->w / 2) >= c->mon->wx)
-			  && (c->x + (c->w / 2) < c->mon->wx + c->mon->ww)) ? bar_h : c->mon->my);
+	c->y = MAX(c->y, ((m->by == m->my) && (c->x + (c->w / 2) >= m->wx)
+			  && (c->x + (c->w / 2) < m->wx + m->ww)) ? bar_h : m->my);
 	c->bw = borderpx;
 
 	wc.border_width = c->bw;
@@ -69,7 +75,10 @@ void client_create(Window w, XWindowAttributes *wa)
 	client_update_window_type(c);
 	client_update_size_hints(c);
 	client_update_wm_hints(c);
-	XSelectInput(dpy, w, EnterWindowMask | FocusChangeMask | PropertyChangeMask | StructureNotifyMask);
+	XSelectInput(
+		dpy,
+		w,
+		EnterWindowMask | FocusChangeMask | PropertyChangeMask | StructureNotifyMask);
 	grab_buttons(c, 0);
 	if (!c->isfloating)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
@@ -80,9 +89,9 @@ void client_create(Window w, XWindowAttributes *wa)
 			(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * screen_w, c->y, c->w, c->h); /* some windows require this */
 	client_state_set(c, NormalState);
-	if (c->mon == selmon)
+	if (m == selmon)
 		client_unfocus(mon_selected_client_get(selmon), 0);
-	arrange(c->mon);
+	mon_arrange(m);
 	XMapWindow(dpy, c->win);
 	client_focus(c);
 }
@@ -99,6 +108,21 @@ void client_show(void *client, void *storage)
 	struct Client *c = (struct Client *) client;
 
 	XMapWindow(dpy, c->win);
+}
+
+bool client_has_win(void *client, void *window)
+{
+	struct Client *c = (struct Client *) client;
+	Window w = *(Window *) window;
+
+	return c->win == w;
+}
+
+void client_mon_set(void *client, void *monitor)
+{
+	struct Client *c = (struct Client *) client;
+
+	c->mon = (struct Monitor *) monitor;
 }
 
 void client_name_update(Client *c)
@@ -268,7 +292,7 @@ void client_fullscreen_set(Client *c, bool fullscreen)
 		c->w = c->oldw;
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
-		arrange(c->mon);
+		mon_arrange(c->mon);
 	}
 }
 
@@ -487,8 +511,6 @@ static void apply_rules(Client *c)
 
 static void attach_above(Client *c)
 {
-	printf("%s(%p)\n", __func__, (void *) c);
-
 	Client *selected_client = tagview_selected_client_get(c->mon->tagview);
 
 	if (selected_client == NULL || selected_client->isfloating) {

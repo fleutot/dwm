@@ -47,6 +47,8 @@
 
 #include "bar.h"
 #include "client.h"
+#include "debug.h"
+#include "dm.h"
 #include "drw.h"
 #include "linkedlist/linkedlist.h"
 #include "monitor.h"
@@ -88,7 +90,6 @@ static void motionnotify(const XEvent *e);
 static void propertynotify(const XEvent *e);
 static void run(void);
 static void scan(void);
-static void setfocus(Client *c);
 static void setup(void);
 static void sigchld(int unused);
 static void unmanage(Client *c, int destroyed);
@@ -96,7 +97,7 @@ static void unmapnotify(const XEvent *e);
 static void updatebars(void);
 static void updateclientlist(void);
 static int updategeom(void);
-static Monitor *wintomon(Window w);
+
 
 /* variables */
 static int screen;
@@ -140,12 +141,6 @@ unsigned int numlockmask = 0;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
-void pdebug(const char *s)
-{
-	printf("%s", s);
-	fflush(stdout);
-}
-
 /* function implementations */
 
 void
@@ -164,7 +159,7 @@ buttonpress(const XEvent *e)
 	Monitor *m;
 	const XButtonPressedEvent *ev = &e->xbutton;
 
-	printf("%s(%p)\n", __func__, (void *) e);
+	P_DEBUG("%s(%p)\n", __func__, (void *) e);
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -253,7 +248,7 @@ void cleanupmon(void *input, void *storage)
 void
 clientmessage(const XEvent *e)
 {
-	printf("%s(%p)\n", __func__, (void *) e);
+	P_DEBUG("%s(%p)\n", __func__, (void *) e);
 	const XClientMessageEvent *cme = &e->xclient;
 	Client *c = wintoclient(cme->window);
 
@@ -282,7 +277,7 @@ configurenotify(const XEvent *e)
 
 	/* TODO: updategeom handling sucks, needs to be simplified */
 	if (ev->window == root) {
-		printf("%s on root\n", __func__);
+		P_DEBUG("%s on root\n", __func__);
 		dirty = (screen_w != ev->width || screen_h != ev->height);
 		screen_w = ev->width;
 		screen_h = ev->height;
@@ -308,7 +303,7 @@ configurenotify(const XEvent *e)
 				}
 #endif
 			client_focus(NULL);
-			arrange(NULL);
+			mon_arrange(NULL);
 		}
 	}
 }
@@ -372,13 +367,14 @@ destroynotify(const XEvent *e)
 	Client *c;
 	const XDestroyWindowEvent *ev = &e->xdestroywindow;
 
+	P_DEBUG("%s\n", __func__);
 	if ((c = wintoclient(ev->window)))
 		unmanage(c, 1);
 }
 
 void detach(Client *c)
 {
-	printf("%s(%p)\n", __func__, (void *) c);
+	P_DEBUG("%s(%p)\n", __func__, (void *) c);
 	struct Client *new_selected_c = mon_selected_client_get(c->mon);
 	if (c == new_selected_c) {
 		new_selected_c = list_next_select(&c->mon->tagview->clients);
@@ -445,7 +441,7 @@ focusin(const XEvent *e)
 	struct Client *sel_client = mon_selected_client_get(selmon);
 
 	if (sel_client && ev->window != sel_client->win)
-		setfocus(sel_client);
+		dm_focus(sel_client);
 }
 
 int
@@ -603,7 +599,7 @@ pop(Client *c)
 	detach(c);
 	attach(c);
 	client_focus(c);
-	arrange(c->mon);
+	mon_arrange(c->mon);
 }
 
 void
@@ -624,7 +620,7 @@ propertynotify(const XEvent *e)
 		case XA_WM_TRANSIENT_FOR:
 			if (!c->isfloating && (XGetTransientForHint(dpy, c->win, &trans)) &&
 			    (c->isfloating = (wintoclient(trans)) != NULL))
-				arrange(c->mon);
+				mon_arrange(c->mon);
 			break;
 		case XA_WM_NORMAL_HINTS:
 			client_update_size_hints(c);
@@ -667,7 +663,7 @@ run(void)
 {
 	XEvent ev;
 
-	printf("run start\n"); fflush(stdout);
+	P_DEBUG("run start\n"); fflush(stdout);
 	/* main event loop */
 	XSync(dpy, False);
 	while (running && !XNextEvent(dpy, &ev)) {
@@ -749,25 +745,13 @@ sendevent(Client *c, Atom proto)
 }
 
 void
-setfocus(Client *c)
-{
-	if (!c->neverfocus) {
-		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
-		XChangeProperty(dpy, root, netatom[NetActiveWindow],
-				XA_WINDOW, 32, PropModeReplace,
-				(unsigned char *) &(c->win), 1);
-	}
-	sendevent(c, wmatom[WMTakeFocus]);
-}
-
-void
 setup(void)
 {
 	int i;
 	XSetWindowAttributes wa;
 	Atom utf8string;
 
-	printf("%s\n", __func__); fflush(stdout);
+	P_DEBUG("%s\n", __func__); fflush(stdout);
 
 	/* clean up any zombies immediately */
 	sigchld(0);
@@ -782,9 +766,7 @@ setup(void)
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
 	bar_h = drw->fonts->h + 2;
-	pdebug("before updategeom\n");
 	updategeom();
-	pdebug("after updategeom\n");/* init atoms */
 	utf8string = XInternAtom(dpy, "UTF8_STRING", False);
 	wmatom[WMProtocols] = XInternAtom(dpy, "WM_PROTOCOLS", False);
 	wmatom[WMDelete] = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
@@ -804,16 +786,13 @@ setup(void)
 	cursor[CurResize] = drw_cur_create(drw, XC_sizing);
 	cursor[CurMove] = drw_cur_create(drw, XC_fleur);
 	/* init appearance */
-	pdebug("before num_colors ecalloc\n");
 	scheme = ecalloc(num_colors, sizeof(Clr *));
 	for (i = 0; i < num_colors; i++)
 		scheme[i] = drw_scm_create(drw, colors[i], 3);
 	tagview_init();
 	/* init bars */
-	pdebug("before updatebars\n");
 	updatebars();
 	bar_status_update();
-	pdebug("before createsimple\n");
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
@@ -827,16 +806,16 @@ setup(void)
 			PropModeReplace, (unsigned char *) netatom, NetLast);
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select events */
-	pdebug("before cursor\n");
 	wa.cursor = cursor[CurNormal]->cursor;
 	wa.event_mask = SubstructureRedirectMask | SubstructureNotifyMask
 			| ButtonPressMask | PointerMotionMask | EnterWindowMask
 			| LeaveWindowMask | StructureNotifyMask | PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask | CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
+	P_DEBUG("--------------------ROOT: %lx\n", root);
 	grabkeys();
 	client_focus(NULL);
-	pdebug("setup done\n");
+	P_DEBUG("setup done\n");
 }
 
 
@@ -854,7 +833,7 @@ unmanage(Client *c, int destroyed)
 	Monitor *m = c->mon;
 	XWindowChanges wc;
 
-	printf("%s(%p, %d)\n", __func__, (void *) c, destroyed);
+	P_DEBUG("%s(%p, %d)\n", __func__, (void *) c, destroyed);
 	detach(c);
 	if (!destroyed) {
 		wc.border_width = c->oldbw;
@@ -870,7 +849,7 @@ unmanage(Client *c, int destroyed)
 	free(c);
 	client_focus(NULL);
 	updateclientlist();
-	arrange(m);
+	mon_arrange(m);
 }
 
 void
@@ -879,14 +858,18 @@ unmapnotify(const XEvent *e)
 	Client *c;
 	const XUnmapEvent *ev = &e->xunmap;
 
+	/// this print shows up twice when a terminal dies
+	/// (C-d). Unmap occurs twice, because setup() registers both
+	/// SubstructureNotifyMask, and StructureNotifyMask. One event
+	/// has both ev->window and ev->event as the window, and one
+	/// event has ev->event as the root window.
+	/// TODO: do we really need SubstructureNotifyMask for root?
+	P_DEBUG("%s %lx:%lx\n", __func__, ev->window, ev->event);
+
 	if ((c = wintoclient(ev->window))) {
 		if (ev->send_event) {
 			/// Not sure when this might be used
 			client_state_set(c, WithdrawnState);
-		} else {
-			/// Do nothing.	Unmap is only to hide a
-			/// window, that does not mean that the client
-			/// should die.
 		}
 	}
 }
@@ -935,6 +918,7 @@ updateclientlist()
 }
 
 struct xinerama_screen_info {
+	int current_num;
 	XineramaScreenInfo *unique;
 	int size;
 };
@@ -945,20 +929,19 @@ static void update_mons_with_new(void *data, void *storage)
 	struct xinerama_screen_info *screen_info = storage;
 	XineramaScreenInfo *unique = screen_info->unique;
 
-	int i;
+	int i = screen_info->current_num++;
 
-	for (i = 0; i < screen_info->size; i++) {
-		if (unique[i].x_org != m->mx
-		    || unique[i].y_org != m->my
-		    || unique[i].width != m->mw
-		    || unique[i].height != m->mh) {
-			m->num = i;
-			m->mx = m->wx = unique[i].x_org;
-			m->my = m->wy = unique[i].y_org;
-			m->mw = m->ww = unique[i].width;
-			m->mh = m->wh = unique[i].height;
-			updatebarpos(m);
-		}
+	if (unique[i].x_org != m->mx
+	    || unique[i].y_org != m->my
+	    || unique[i].width != m->mw
+	    || unique[i].height != m->mh) {
+		m->num = i;
+		m->mx = m->wx = unique[i].x_org;
+		P_DEBUG("%s: %p: %d\n", __func__, (void *) m, m->mx);
+		m->my = m->wy = unique[i].y_org;
+		m->mw = m->ww = unique[i].width;
+		m->mh = m->wh = unique[i].height;
+		updatebarpos(m);
 	}
 }
 
@@ -990,12 +973,20 @@ updategeom(void)
 {
 	bool dirty = false;
 
-	pdebug("updategeom start\n");
-
 #ifdef XINERAMA
 	if (XineramaIsActive(dpy)) {
 		int i, j, new_num_mons;
 		XineramaScreenInfo *info = XineramaQueryScreens(dpy, &new_num_mons);
+
+		for (i = 0; i < new_num_mons; i++) {
+			P_DEBUG("%s: #%d, (%d, %d), (%d, %d)\n",
+				__func__,
+				info[i].screen_number,
+				info[i].x_org,
+				info[i].y_org,
+				info[i].width,
+				info[i].height);
+		}
 		XineramaScreenInfo *unique = NULL;
 
 		/* only consider unique geometries as separate screens */
@@ -1007,13 +998,31 @@ updategeom(void)
 		new_num_mons = j;
 
 		if (mons.size <= new_num_mons) {
-			pdebug("updategeom: new monitors\n");
+			P_DEBUG("updategeom: new monitors, from %d to %d\n",
+				mons.size,
+				new_num_mons);
 			/* More monitors available */
 			for (i = mons.size; i < new_num_mons; i++) {
-				printf("  create mon with tagview %p\n", (void *) undisplayed_tagview_get());
-				list_add(&mons, createmon(undisplayed_tagview_get()));
+				P_DEBUG(
+					"create mon with tagview %p\n",
+					(void *) undisplayed_tagview_get());
+				P_DEBUG(
+					"(x, y): (%d, %d)\n",
+					unique[i].x_org,
+					unique[i].y_org);
+
+				list_add(
+					&mons,
+					createmon(
+						undisplayed_tagview_get(),
+						unique[i].x_org,
+						unique[i].y_org,
+						unique[i].width,
+						unique[i].height
+						));
 			}
 			struct xinerama_screen_info screen_info = {
+				.current_num = 0,
 				.unique = unique,
 				.size = new_num_mons
 			};
@@ -1031,7 +1040,7 @@ updategeom(void)
 			// be possible by passing the mask to the
 			// callback through storage.
 		} else {
-			pdebug("updategeom remove mons");
+			P_DEBUG("updategeom remove mons");
 			/* fewer monitors available */
 			for (i = new_num_mons; i < mons.size; i++) {
 				struct Monitor *m = list_pop(&mons);
@@ -1049,7 +1058,14 @@ updategeom(void)
 		/* UNTESTED, only run with Xinerama so far */
 		struct Monitor *m;
 		if (mons.size == 0) {
-			m = createmon(undisplayed_tagview_get());
+			/// TODO: use root window position and
+			/// dimensions, if not on Xinerama?
+			m = createmon(
+				undisplayed_tagview_get(),
+				0,
+				0,
+				1920, /// TODO: get root size!
+				1200);
 			list_add(&mons, m);
 		} else {
 			m = selmon;
@@ -1070,7 +1086,7 @@ updategeom(void)
 Client *
 wintoclient(Window w)
 {
-	return tagview_find_window_client(&w);
+	return tagviews_find_window_client(&w);
 }
 
 static bool
@@ -1082,7 +1098,7 @@ window_is_barwin(void *monitor, void *window)
 	return *w == m->barwin;
 }
 
-Monitor *
+struct Monitor *
 wintomon(Window w)
 {
 	int x, y;
@@ -1148,7 +1164,6 @@ xeventhandler(const XEvent *ev)
 int
 main(int argc, char *argv[])
 {
-	pdebug("main\n");
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("dwm-"VERSION);
 	else if (argc != 1)

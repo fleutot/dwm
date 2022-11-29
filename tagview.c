@@ -5,6 +5,8 @@
 
 #include "client.h"
 #include "config.h"
+#include "debug.h"
+#include "dwm.h"
 #include "layout.h"
 #include "util.h"
 
@@ -39,19 +41,26 @@ void tagview_init(void)
 
 void tagview_hide(struct tagview *tv)
 {
-	printf("%s, clients size: %d\n", __func__, tv->clients.size);
+	if (tv == NULL) {
+		return;
+	}
+	P_DEBUG("%s, clients size: %d\n", __func__, tv->clients.size);
 	list_run_for_all(&tv->clients, client_hide, NULL);
 }
 
 void tagview_show(struct tagview *tv, struct Monitor *m)
 {
+	if (tv == NULL) {
+		return;
+	}
+	m->tagview = tv;
+	list_run_for_all(&tv->clients, client_mon_set, m);
 	tagview_arrange(m);
 	list_run_for_all(&tv->clients, client_show, NULL);
 }
 
 void tagview_arrange(struct Monitor *m)
 {
-	printf("%s\n", __func__);
 	assert(m != NULL);
 	assert(m->tagview != NULL);
 	assert(m->tagview->arrange != NULL);
@@ -72,13 +81,13 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout)
 
 void tagview_add_client(struct tagview *t, Client *c)
 {
-	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
+	P_DEBUG("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
 	list_add_before(&t->clients, t->clients.selected->data, c);
 }
 
 void tagview_prepend_client(struct tagview *t, Client *c)
 {
-	printf("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
+	P_DEBUG("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
 	list_prepend(&t->clients, c);
 }
 
@@ -94,7 +103,7 @@ Client *tagview_prev_client_select(struct tagview *t)
 
 Client *tagview_selected_client_get(struct tagview *t)
 {
-	printf("%s(%p)\n", __func__, (void *) t);
+	P_DEBUG("input %p, tv index %d\n", (void *) t, t->index);
 	return (Client *) list_selected_data_get(&t->clients);
 }
 
@@ -118,7 +127,7 @@ static bool window_to_find_is_client(void *c, void *w)
 	return ((struct Client *) c)->win == *window_to_find;
 }
 
-struct Client *tagview_find_window_client(Window *w)
+struct Client *tagviews_find_window_client(Window *w)
 {
 	struct Client *c = NULL;
 	Window *window_to_find = w;
@@ -133,6 +142,14 @@ struct Client *tagview_find_window_client(Window *w)
 		}
 	}
 	return NULL;
+}
+
+struct Client *tagview_find_window_client(struct tagview *tv, Window *w)
+{
+	return list_find(
+		&tv->clients,
+		client_has_win,
+		w);
 }
 
 struct tagview *tagview_get(unsigned int index)

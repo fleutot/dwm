@@ -56,5 +56,6 @@ int xerrorstart(Display *dpy, XErrorEvent *ee);
 void xeventhandler(const XEvent *ev);
 void updatenumlockmask(void);
 Client *wintoclient(Window w);
+struct Monitor *wintomon(Window w);
 
 #endif

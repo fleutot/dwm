@@ -8,7 +8,7 @@ void debug_print_indent(void);
 #if defined(DEBUG)
 #define P_DEBUG(...) do {                                               \
 		debug_print_indent(); \
-		printf("| ");                                           \
+		printf("  | ");                                         \
 		printf(__VA_ARGS__);                                    \
 } while (0)
 #else
