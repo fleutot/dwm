@@ -407,18 +407,15 @@ tag_view(const Arg *arg)
 			__func__,
 			other_m->tagview->index,
 			selmon->tagview->index);
-		/// Must hide first, to avoid attempting to draw the
-		/// window twice?
-		// Switching tag on a monitor hides its current tag
-		/// view. Since this swap makes two switches, the
-		/// second switch might hide the tag view from the
-		/// first switch.
+		// Must hide both, to avoid hiding a tagview that has
+		// already moved to another monitor.
 		tagview_hide(other_m->tagview);
 		tagview_hide(selmon->tagview);
 
-		struct tagview *other_m_new_tagview = selmon->tagview;
-		tagview_show(other_m->tagview, selmon);
-		tagview_show(other_m_new_tagview, other_m);
+		struct tagview *selmon_new_tagview = other_m->tagview;
+		tagview_show(selmon->tagview, other_m);
+		tagview_show(selmon_new_tagview, selmon);
+		client_focus(NULL);
 	} else {
 		P_DEBUG("### %s: getting tagview %d on selmon\n", __func__, tv_index);
 		mon_tag_switch(selmon, tagview_get(tv_index));

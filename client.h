@@ -18,6 +18,8 @@ struct Client {
 	/// TODO: clients should not save their geometry, why would
 	/// they? The layouts manage geometries, and update the
 	/// display manager window.
+	/// Most of these values seem to mirror X size hints, can't
+	/// we just let the Window member own them?
 	int x, y, w, h;
 	int oldx, oldy, oldw, oldh;
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh;

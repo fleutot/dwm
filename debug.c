@@ -43,6 +43,6 @@ void debug_print_indent(void)
 {
 	assert(print_indent_level >= 0);
 	for (int i = 0; i < print_indent_level; i++) {
-		printf("    ");
+		printf("  | ");
 	}
 }
