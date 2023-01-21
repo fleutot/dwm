@@ -157,10 +157,11 @@ void client_focus(struct Client *c)
 	if (c == NULL) {
 		c = tagview_selected_client_get(selmon->tagview);
 		if (c == NULL) {
+			P_DEBUG("%s: could not get client\n", __func__);
 			return;
 		}
 	}
-	selmon = c->mon;
+
 	if (c->isurgent) {
 		/// In original dwm, the logic was the opposite. Are
 		/// we supposed to *unset* urgency here?

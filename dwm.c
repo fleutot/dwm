@@ -138,6 +138,8 @@ int screen_w, screen_h; // X display screen geometry width, height. Of the
 int bar_h, bar_w = 0;   /* bar geometry */
 unsigned int numlockmask = 0;
 
+bool skip_mouse_over_focus_once = false;
+
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
@@ -406,6 +408,11 @@ enternotify(const XEvent *e)
 	Client *c;
 	Monitor *m;
 	const XCrossingEvent *ev = &e->xcrossing;
+
+	if (skip_mouse_over_focus_once) {
+		skip_mouse_over_focus_once = false;
+		return;
+	}
 
 	if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
 		return;

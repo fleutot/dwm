@@ -147,3 +147,9 @@ Button buttons[] = {
 };
 /* *INDENT-ON* */
 const int num_buttons = LENGTH(buttons);
+
+const struct config config = {
+	.focus = {
+		.tagview_change_ignores_mouse_over = true,
+	},
+};

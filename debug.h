@@ -6,6 +6,7 @@
 void debug_print_indent(void);
 
 #if defined(DEBUG)
+#define P_INT(x) int x
 #define P_DEBUG(...) do {                                               \
 		debug_print_indent(); \
 		printf("  | ");                                         \
@@ -13,6 +14,7 @@ void debug_print_indent(void);
 } while (0)
 #else
 #define P_DEBUG(...)
+#define P_INT(x)
 #endif
 
 #endif

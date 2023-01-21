@@ -197,7 +197,7 @@ void list_run_for_all(
 	if (list == NULL || list->head == NULL) {
 		return;
 	}
-	int i = 0;
+	P_INT(i = 0);
 	for (struct ll_node *n = list->head; n != NULL; n = n->next) {
 		P_DEBUG("%s: run callback on element %d\n", __func__, i++);
 		callback(n->data, storage);
