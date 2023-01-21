@@ -40,6 +40,8 @@ extern unsigned int numlockmask; /* unclear why numlock needs special
                                   * care */
 extern Atom netatom[];           /// TODO: Could this move to dm_*.c?
 
+extern bool skip_mouse_over_focus_once;
+
 void focus(Client *c);
 int getrootptr(int *x, int *y);
 void dwm_quit(void);

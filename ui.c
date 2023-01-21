@@ -402,6 +402,10 @@ tag_view(const Arg *arg)
 		monitor_shows_tagview_index,
 		&tv_index);
 
+	if (config.focus.tagview_change_ignores_mouse_over) {
+		skip_mouse_over_focus_once = true;
+	}
+
 	if (other_m != NULL) {
 		P_DEBUG("### %s: swapping tagview on other, tvother:%d, tvselmon:%d\n",
 			__func__,

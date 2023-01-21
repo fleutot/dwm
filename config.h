@@ -3,6 +3,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <stdbool.h>
+
 #include "client.h"
 #include "input.h"
 #include "ui.h"
@@ -52,5 +54,13 @@ extern const int num_keys;
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 extern Button buttons[];
 extern const int num_buttons;
+
+struct config {
+	struct cfg_focus {
+		bool tagview_change_ignores_mouse_over;
+	} focus;
+};
+
+extern const struct config config;
 
 #endif
