@@ -272,25 +272,37 @@ spawn(const Arg *arg)
 }
 
 void
-tag(const Arg *arg)
+tag_send(const Arg *arg)
 {
-#if 0
-// The whole tag thing is from dwm, now obsolete. Implement with
-// tagview instead! If there really is a need for a client to have
-// more than one tag, just add a pointer in the client list of that
-// tag, pointing to the same Client. It might make sense to lose the
-// owneship of clients from tagviews, and have a list of clients at
-// the top-level. Tagview would then reference Clients from that
-// list. Having a top-level reference to the active_client could maybe
-// be useful, although tagviews still need to remember which client of
-// theirs is the active one, so they can focus it when they themselves
-// come in focus.
-	if (selmon->tagview->active_client && arg->ui & tag_mask) {
-		selmon->tagview->active_client->tags = arg->ui & tag_mask;
-		focus(NULL);
-		arrange(selmon);
+	struct Client *c = tagview_selected_client_get(selmon->tagview);
+
+	if (c == NULL) {
+		return;
 	}
-#endif
+
+	struct tagview *dst_tagview = tagview_get(arg->ui);
+
+	tagview_add_client(dst_tagview, c);
+	tagview_rm_client(selmon->tagview, c);
+	client_focus(NULL);
+	mon_arrange(selmon);
+
+	////// Somehow, this makes room for the client in the destination
+	////// tagview/monitor, but it does not draw it there.
+	struct Monitor *other_mon = list_find(
+		&mons,
+		mon_shows_tagview,
+		dst_tagview);
+
+	if (other_mon != NULL) {
+		printf("Tagview is visible, arrange\n");
+		///// v Probably not a good solution, clients
+		///// shouldn't need to be aware of their monitor. The
+		///// tagview should draw their clients / move their X
+		///// properties such as location.
+		client_mon_set(c, other_mon);
+		mon_arrange(other_mon);
+	}
 }
 
 // Purpose: move the selected client to next monitor. From dwm, now

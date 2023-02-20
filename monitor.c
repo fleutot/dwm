@@ -77,6 +77,13 @@ bool mon_has_window(void *monitor, void *window)
 	return tagview_find_window_client(m->tagview, w) != NULL;
 }
 
+bool mon_shows_tagview(void *monitor, void *tagview)
+{
+	struct Monitor *m = (struct Monitor *) monitor;
+
+	return m->tagview == (struct tagview *) tagview;
+}
+
 static void
 configure_client_w_changes(void *client, void *storage)
 {

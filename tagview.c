@@ -82,7 +82,23 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout)
 void tagview_add_client(struct tagview *t, Client *c)
 {
 	P_DEBUG("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
+
+	///	ERRROR HERE: selected may be NULL. Modify `list_add_before` to allow
+	///		adding to empty list if second parameter is null.
+
 	list_add_before(&t->clients, t->clients.selected->data, c);
+}
+
+void tagview_rm_client(struct tagview *t, Client *c)
+{
+	P_DEBUG("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
+	if (c == list_selected_data_get(&t->clients)) {
+		(void) list_prev_select(&t->clients);
+		if (c == list_selected_data_get(&t->clients)) {
+			(void) list_next_select(&t->clients);
+		}
+	}
+	list_rm(&t->clients, (void *) c);
 }
 
 void tagview_prepend_client(struct tagview *t, Client *c)

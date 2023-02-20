@@ -70,7 +70,7 @@ const int resizehints = 0;       /* 1 means respect size hints in tiled resizals
 #define TAGKEYS(KEY, TAG) \
 	{ MODKEY, KEY, tag_view, { .ui = TAG } }, \
 	{ MODKEY | ControlMask, KEY, toggleview, { .ui = TAG } }, \
-	{ MODKEY | ShiftMask, KEY, tag, { .ui = TAG } }, \
+	{ MODKEY | ShiftMask, KEY, tag_send, { .ui = TAG } }, \
 	{ MODKEY | ControlMask | ShiftMask, KEY, toggletag, { .ui = TAG } }
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
@@ -142,7 +142,7 @@ Button buttons[] = {
 	{ ClkClientWin,  MOUSE_MODKEY, Button2, togglefloating, { 0           } },
 	{ ClkClientWin,  MOUSE_MODKEY, Button3, resizemouse,    { 0           } },
 	{ ClkTagBar,     0,            Button3, toggleview,     { 0           } },
-	{ ClkTagBar,     MOUSE_MODKEY, Button1, tag,            { 0           } },
+	{ ClkTagBar,     MOUSE_MODKEY, Button1, tag_send,       { 0           } },
 	//{ ClkTagBar,     MOUSE_MODKEY, Button3, toggletag,      { 0           } },
 };
 /* *INDENT-ON* */

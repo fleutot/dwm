@@ -18,7 +18,7 @@ void resizemouse(const Arg *arg);
 void setlayout(const Arg *arg);
 void setmfact(const Arg *arg);
 void spawn(const Arg *arg);
-void tag(const Arg *arg);
+void tag_send(const Arg *arg);
 void tagmon(const Arg *arg);
 void togglebar(const Arg *arg);
 void togglefloating(const Arg *arg);

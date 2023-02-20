@@ -39,6 +39,7 @@ void tagview_hide(struct tagview *tv);
 void tagview_show(struct tagview *tv, struct Monitor *m);
 
 void tagview_add_client(struct tagview *t, Client *c);
+void tagview_rm_client(struct tagview *t, Client *c);
 void tagview_prepend_client(struct tagview *t, Client *c);
 struct Client *tagview_next_client_select(struct tagview *t);
 struct Client *tagview_selected_client_get(struct tagview *t);

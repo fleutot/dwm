@@ -41,6 +41,7 @@ void mon_tag_switch(struct Monitor *m, struct tagview *tagview);
 void mon_arrange(Monitor *m);
 
 bool mon_has_window(void *monitor, void *window);
+bool mon_shows_tagview(void *monitor, void *tagview);
 
 int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 
