@@ -68,7 +68,6 @@
 /* enums */
 
 /* function declarations */
-static void attach(Client *c);
 static void buttonpress(const XEvent *e);
 static void checkotherwm(void);
 static void cleanup(void);
@@ -144,13 +143,6 @@ bool skip_mouse_over_focus_once = false;
 #include "config.h"
 
 /* function implementations */
-
-void
-attach(Client *c)
-{
-	tagview_prepend_client(c->mon->tagview, c);
-}
-
 
 void
 buttonpress(const XEvent *e)
@@ -259,8 +251,11 @@ clientmessage(const XEvent *e)
 	if (cme->message_type == netatom[NetWMState]) {
 		if (cme->data.l[1] == netatom[NetWMFullscreen]
 		    || cme->data.l[2] == netatom[NetWMFullscreen])
-			client_fullscreen_set(c, (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD    */
-						  || (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
+			client_fullscreen_set(
+				c,
+				cme->data.l[0] == 1     /* _NET_WM_STATE_ADD    */
+				|| (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */
+				    && !c->isfullscreen));
 	} else if (cme->message_type == netatom[NetActiveWindow]) {
 		if (c != tagview_selected_client_get(selmon->tagview) && !c->isurgent)
 			client_urgent_set(c, true);
@@ -322,7 +317,7 @@ configurerequest(const XEvent *e)
 		if (ev->value_mask & CWBorderWidth) {
 			c->bw = ev->border_width;
 		} else if (c->isfloating || !selmon->tagview->arrange) {
-			m = c->mon;
+			m = wintomon(ev->window);
 			if (ev->value_mask & CWX) {
 				c->oldx = c->x;
 				c->x = m->mx + ev->x;
@@ -377,22 +372,23 @@ destroynotify(const XEvent *e)
 void detach(Client *c)
 {
 	P_DEBUG("%s(%p)\n", __func__, (void *) c);
-	struct Client *new_selected_c = mon_selected_client_get(c->mon);
+	struct Monitor *m = wintomon(c->win);
+	struct Client *new_selected_c = mon_selected_client_get(m);
 	if (c == new_selected_c) {
-		new_selected_c = list_next_select(&c->mon->tagview->clients);
+		new_selected_c = list_next_select(&m->tagview->clients);
 	}
 	if (c == new_selected_c) {
-		new_selected_c = list_prev_select(&c->mon->tagview->clients);
+		new_selected_c = list_prev_select(&m->tagview->clients);
 	}
 	if (c == new_selected_c) {
 		new_selected_c = NULL;
 	}
 
-	list_rm(&c->mon->tagview->clients, c);
+	list_rm(&m->tagview->clients, c);
 
 	if (new_selected_c == NULL) {
 		// The list head might be NULL
-		list_head_select(&c->mon->tagview->clients);
+		list_head_select(&m->tagview->clients);
 	}
 }
 
@@ -417,10 +413,11 @@ enternotify(const XEvent *e)
 	if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
 		return;
 	c = wintoclient(ev->window);
-	m = c ? c->mon : wintomon(ev->window);
+
+	m = list_find(&mons, mon_has_client, c);
 	struct Client *sel_client = mon_selected_client_get(selmon);
 
-	if (m != selmon) {
+	if (m != NULL && m != selmon) {
 		selmon = m;
 	} else if (!c || c == sel_client) {
 		return;
@@ -432,11 +429,12 @@ enternotify(const XEvent *e)
 void
 expose(const XEvent *e)
 {
+#if BAR
 	Monitor *m;
 	const XExposeEvent *ev = &e->xexpose;
-
 	if (ev->count == 0 && (m = wintomon(ev->window)))
 		bar_draw(m);
+#endif
 }
 
 /* there are some broken focus acquiring clients needing extra handling */
@@ -601,15 +599,6 @@ motionnotify(const XEvent *e)
 }
 
 void
-pop(Client *c)
-{
-	detach(c);
-	attach(c);
-	client_focus(c);
-	mon_arrange(c->mon);
-}
-
-void
 propertynotify(const XEvent *e)
 {
 	Client *c;
@@ -625,9 +614,13 @@ propertynotify(const XEvent *e)
 		default:
 			break;
 		case XA_WM_TRANSIENT_FOR:
-			if (!c->isfloating && (XGetTransientForHint(dpy, c->win, &trans)) &&
-			    (c->isfloating = (wintoclient(trans)) != NULL))
-				mon_arrange(c->mon);
+			if (!c->isfloating
+			    && XGetTransientForHint(dpy, c->win, &trans)
+			    && (c->isfloating = (wintoclient(trans) != NULL))
+			    ) {
+				// This could run only on the relevant monitor:
+				list_run_for_all(&mons, mon_arrange_cb, NULL);
+			}
 			break;
 		case XA_WM_NORMAL_HINTS:
 			client_update_size_hints(c);
@@ -639,8 +632,10 @@ propertynotify(const XEvent *e)
 		}
 		if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
 			client_name_update(c);
+#if BAR
 			if (c == mon_selected_client_get(c->mon))
 				bar_draw(c->mon);
+#endif
 		}
 		if (ev->atom == netatom[NetWMWindowType])
 			client_update_window_type(c);
@@ -837,7 +832,6 @@ sigchld(int unused)
 void
 unmanage(Client *c, int destroyed)
 {
-	Monitor *m = c->mon;
 	XWindowChanges wc;
 
 	P_DEBUG("%s(%p, %d)\n", __func__, (void *) c, destroyed);
@@ -856,7 +850,8 @@ unmanage(Client *c, int destroyed)
 	free(c);
 	client_focus(NULL);
 	updateclientlist();
-	mon_arrange(m);
+	// This could run only on the relevant monitor:
+	list_run_for_all(&mons, mon_arrange_cb, NULL);
 }
 
 void
@@ -1109,7 +1104,6 @@ struct Monitor *
 wintomon(Window w)
 {
 	int x, y;
-	Client *c;
 	Monitor *m;
 
 	if (w == root && getrootptr(&x, &y))
@@ -1119,8 +1113,9 @@ wintomon(Window w)
 	if (m)
 		return m;
 
-	if ((c = wintoclient(w)))
-		return c->mon;
+	m = list_find(&mons, mon_has_window, &w);
+	if (m)
+		return m;
 
 	return selmon;
 }

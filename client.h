@@ -24,13 +24,8 @@ struct Client {
 	int oldx, oldy, oldw, oldh;
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh;
 	int bw, oldbw;
-	unsigned int tags;
-	bool isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
-	Client *next;
-	Client *snext;
 
-	/// TODO: obsolete? only tagview know about their current monitor
-	struct Monitor *mon;
+	bool isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
 
 	Window win;
 };
@@ -52,7 +47,7 @@ void client_unfocus(struct Client *c, bool focus_root);
 // These signatures must match that of the callback in list_run_for_all
 void client_hide(void *client, void *storage);
 void client_show(void *client, void *storage);
-void client_mon_set(void *client, void *monitor);
+
 // These signatures must match that of the callback in list_find
 bool client_has_win(void *client, void *window);
 
@@ -65,8 +60,14 @@ void client_update_window_type(Client *c);
 void client_state_set(Client *c, long state);
 void client_fullscreen_set(Client *c, bool fullscreen);
 
+// To use for list find callback
+static inline
+bool client_equal(void *client_a, void *client_b)
+{
+	return client_a == client_b;
+}
+
 bool isvisible(const Client *c);
-void showhide(Client *c);
 int width(const Client *c);
 int height(const Client *c);
 void configure(Client *c);

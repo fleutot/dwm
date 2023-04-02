@@ -69,6 +69,18 @@ mon_arrange(Monitor *m)
 	}
 }
 
+void mon_arrange_cb(void *monitor, void *storage)
+{
+	mon_arrange((struct Monitor *) monitor);
+}
+
+bool mon_has_client(void *monitor, void *client)
+{
+	struct Monitor *m = (struct Monitor *) monitor;
+
+	return tagview_has_client(m->tagview, (struct Client *) client);
+}
+
 bool mon_has_window(void *monitor, void *window)
 {
 	struct Monitor *m = (struct Monitor *) monitor;

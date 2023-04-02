@@ -53,9 +53,11 @@ static bool int_arrays_equal(
 static void test_list_run_for_all(void);
 static void test_list_data_handle_get(void);
 static void test_list_add_before(void);
+static void test_list_add_before_selected(void);
 static void test_list_rm(void);
 static void test_list_next_prev(void);
 static void test_list_pop(void);
+static void test_list_data_swap(void);
 
 //******************************************************************************
 // Function definitions
@@ -65,9 +67,11 @@ int main(void)
 	test_list_run_for_all();
 	test_list_data_handle_get();
 	test_list_add_before();
+	test_list_add_before_selected();
 	test_list_rm();
 	test_list_next_prev();
 	test_list_pop();
+	test_list_data_swap();
 	printf("All tests passed.\n");
 }
 
@@ -145,6 +149,10 @@ static void test_list_add_before(void)
 {
 	TEST_START_PRINT();
 	int data[] = { 1, 2, 3, 4, 5 };
+
+	/// TODO: migrate the input to be NOT dynamically allocated.
+	/// See how test_list_next_prev does it. Right now, there's a
+	/// memory leak.
 	int *data_objects[NB_ELEMENTS(data)];
 	// lists requires dynamic allocation for their objects.
 	for (int i = 0; i < NB_ELEMENTS(data); i++) {
@@ -168,6 +176,45 @@ static void test_list_add_before(void)
 	list_run_for_all(&list, read_to_array, NULL);
 
 	assert(int_arrays_equal((int[]) { 1, 2, 42, 3, 4, 5 }, read_array, NB_ELEMENTS(data) + 1));
+
+	list_destroy(&list);
+	TEST_END_PRINT();
+}
+
+static void test_list_add_before_selected(void)
+{
+	TEST_START_PRINT();
+	int data[] = { 1, 2, 3, 4, 5 };
+
+	struct list list = LIST_EMPTY;
+
+	for (int i = 0; i < NB_ELEMENTS(data); i++) {
+		list_add(&list, &data[i]);
+	}
+
+	list_select(&list, &data[2]);
+
+	assert(*(int *) (list_selected_data_get(&list)) == 3);
+
+	int extra_data = 42;
+	int *extra_data_object = malloc(sizeof(extra_data));
+	*extra_data_object = extra_data;
+
+	list_add_before_selected(&list, extra_data_object);
+
+	read_to_array_reset();
+	list_run_for_all(&list, read_to_array, NULL);
+	assert(int_arrays_equal((int[]) { 1, 2, 42, 3, 4, 5 }, read_array, NB_ELEMENTS(data) + 1));
+
+
+	list_select(&list, &data[0]);
+	assert(*(int *) (list_selected_data_get(&list)) == 1);
+	int extra_data_at_head = 432;
+	list_add_before_selected(&list, &extra_data_at_head);
+
+	read_to_array_reset();
+	list_run_for_all(&list, read_to_array, NULL);
+	assert(int_arrays_equal((int[]) { 432, 1, 2, 42, 3, 4, 5 }, read_array, NB_ELEMENTS(data) + 2));
 
 	list_destroy(&list);
 	TEST_END_PRINT();
@@ -283,6 +330,8 @@ static void test_list_next_prev(void)
 	read_back = list_prev_select(&short_list_2);
 	assert(*read_back == 1);
 
+	list_destroy(&list);
+
 	TEST_END_PRINT();
 }
 
@@ -326,6 +375,46 @@ static void test_list_pop(void)
 	assert(*popped == 1);
 	assert(list.size == 0);
 	assert(list.head == NULL);
+
+	list_destroy(&list);
+
+	TEST_END_PRINT();
+}
+
+static void test_list_data_swap(void)
+{
+	TEST_START_PRINT();
+	int data[] = { 1, 2, 3, 4, 5 };
+
+	struct list list = LIST_EMPTY;
+
+	for (int i = 0; i < NB_ELEMENTS(data); i++) {
+		list_add(&list, &data[i]);
+	}
+
+	assert(list.size == NB_ELEMENTS(data));
+
+	list_data_swap(&list, &data[1], &data[2]);
+	list_data_swap(&list, &data[4], &data[3]);
+
+	read_to_array_reset(); /* sets all elements to 0 */
+	list_run_for_all(&list, read_to_array, NULL);
+	assert(int_arrays_equal(
+		       (int[]) { 1, 3, 2, 5, 4 },
+		       read_array,
+		       NB_ELEMENTS(data)));
+
+	list_data_swap(&list, &data[0], &data[3]);
+
+	read_to_array_reset(); /* sets all elements to 0 */
+	list_run_for_all(&list, read_to_array, NULL);
+
+	assert(int_arrays_equal(
+		       (int[]) { 4, 3, 2, 5, 1 },
+		       read_array,
+		       NB_ELEMENTS(data)));
+
+	list_destroy(&list);
 
 	TEST_END_PRINT();
 }

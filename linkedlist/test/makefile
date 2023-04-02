@@ -5,6 +5,8 @@ SRC = ../linkedlist.c linkedlist_test.c
 OBJ = $(SRC:.c=.o)
 TARGET = linkedlist_test
 
+CFLAGS += -I.
+
 all: $(TARGET)
 
 $(TARGET): $(OBJ)

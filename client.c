@@ -23,7 +23,6 @@ static const char broken[] = "broken";
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
 static void grab_buttons(struct Client *c, bool focused);
 static void apply_rules(Client *c);
-static void attach_above(Client *c);
 static Atom atom_prop_get(Client *c, Atom prop);
 
 //******************************************************************************
@@ -47,16 +46,14 @@ void client_create(Window w, XWindowAttributes *wa)
 
 	client_name_update(c);
 	if (XGetTransientForHint(dpy, w, &trans) && (mon_from_transient = wintomon(trans))) {
-		c->mon = mon_from_transient;
 		m = mon_from_transient;
 	} else {
-		c->mon = selmon; /// TODO: unnecessary?
 		m = selmon;
 		apply_rules(c);
 	}
 	/// TODO: Client creation should not bother about monitors!
-	/// It should create in the current tagview (if not transient?), and let the tagview
-	/// deal with geometry.
+	/// It should create in the current tagview (if not
+	/// transient?), and let the tagview deal with geometry.
 
 	if (c->x + width(c) > m->mx + m->mw)
 		c->x = m->mx + m->mw - width(c);
@@ -84,7 +81,7 @@ void client_create(Window w, XWindowAttributes *wa)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	if (c->isfloating)
 		XRaiseWindow(dpy, c->win);
-	attach_above(c);
+	tagview_add_client(m->tagview, c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
 			(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * screen_w, c->y, c->w, c->h); /* some windows require this */
@@ -116,13 +113,6 @@ bool client_has_win(void *client, void *window)
 	Window w = *(Window *) window;
 
 	return c->win == w;
-}
-
-void client_mon_set(void *client, void *monitor)
-{
-	struct Client *c = (struct Client *) client;
-
-	c->mon = (struct Monitor *) monitor;
 }
 
 void client_name_update(Client *c)
@@ -270,8 +260,15 @@ void client_update_wm_hints(Client *c)
 	}
 }
 
+//// Keeping this for now, but setting fullscreen should be the
+//// responsibility of a fullscreen layout?
 void client_fullscreen_set(Client *c, bool fullscreen)
 {
+	struct Monitor *m = list_find(&mons, mon_has_client, c);
+
+	if (m == NULL)
+		return;
+
 	if (fullscreen && !c->isfullscreen) {
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 				PropModeReplace, (unsigned char *) &netatom[NetWMFullscreen], 1);
@@ -280,7 +277,7 @@ void client_fullscreen_set(Client *c, bool fullscreen)
 		c->oldbw = c->bw;
 		c->bw = 0;
 		c->isfloating = 1;
-		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+		resizeclient(c, m->mx, m->my, m->mw, m->mh);
 		XRaiseWindow(dpy, c->win);
 	} else if (!fullscreen && c->isfullscreen) {
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
@@ -293,7 +290,7 @@ void client_fullscreen_set(Client *c, bool fullscreen)
 		c->w = c->oldw;
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
-		mon_arrange(c->mon);
+		mon_arrange(m);
 	}
 }
 
@@ -316,10 +313,21 @@ configure(Client *c)
 	XSendEvent(dpy, c->win, False, StructureNotifyMask, (XEvent *) &ce);
 }
 
+static bool client_is_on_mon(void *monitor, void *client)
+{
+	struct Monitor *m = (struct Monitor *) monitor;
+	struct Client *c = (struct Client *) client;
+
+	return tagview_has_client(m->tagview, c);
+}
+
 bool
 isvisible(const Client *c)
 {
-	return c->tags & c->mon->tagset[c->mon->seltags];
+	return list_find(
+		&mons,
+		client_is_on_mon,
+		(void *) c) != NULL;
 }
 
 void
@@ -344,33 +352,6 @@ resizeclient(Client *c, int x, int y, int w, int h)
 	XSync(dpy, False);
 }
 
-
-// Since all clients were owned by a monitor, this showed or hid the
-// clients depending on the visibility, which was determined by tags
-// for any client. The new way to do this is with tagviews, so this
-// show hide is not necessary, we just need to show all clients in the
-// tagview. Hiding is possibly going to be needed as well, or just
-// hide everything (or hide all clients in the tagview we're leaving)
-// and start showing the clients of the tagview.
-void
-showhide(Client *c)
-{
-	if (!c)
-		return;
-	if (isvisible(c)) {
-		/* show clients top down */
-		XMoveWindow(dpy, c->win, c->x, c->y);
-		if ((!c->mon->tagview->arrange || c->isfloating)
-		    && !c->isfullscreen)
-			resize(c, c->x, c->y, c->w, c->h, 0);
-		showhide(c->snext);
-	} else {
-		/* hide clients bottom up */
-		showhide(c->snext);
-		XMoveWindow(dpy, c->win, width(c) * -2, c->y);
-	}
-}
-
 int
 width(const Client *c)
 {
@@ -390,7 +371,7 @@ static int
 applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 {
 	int baseismin;
-	Monitor *m = c->mon;
+	Monitor *m = list_find(&mons, mon_has_client, c);
 
 	/* set minimum possible */
 	*w = MAX(1, *w);
@@ -418,7 +399,7 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		*h = bar_h;
 	if (*w < bar_h)
 		*w = bar_h;
-	if (resizehints || c->isfloating || !c->mon->tagview->arrange) {
+	if (resizehints || c->isfloating || !m->tagview->arrange) {
 		/* see last two sentences in ICCCM 4.1.2.3 */
 		baseismin = c->basew == c->minw && c->baseh == c->minh;
 		if (!baseismin) { /* temporarily remove base dimensions */
@@ -508,17 +489,6 @@ static void apply_rules(Client *c)
 		XFree(ch.res_name);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
 #endif
-}
-
-static void attach_above(Client *c)
-{
-	Client *selected_client = tagview_selected_client_get(c->mon->tagview);
-
-	if (selected_client == NULL || selected_client->isfloating) {
-		tagview_prepend_client(c->mon->tagview, c);
-	} else {
-		tagview_add_client(c->mon->tagview, c);
-	}
 }
 
 /// TODO: this should move to dm_*.c, and use Win instead of Client as input parameter

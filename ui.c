@@ -200,12 +200,13 @@ resizemouse(const Arg *arg)
 
 			nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
 			nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
-			if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
-			    && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh) {
-				if (!c->isfloating && selmon->tagview->arrange
-				    && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
-					togglefloating(NULL);
-			}
+			/// Is this only  for snapping at monitor edges?
+			//if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+			//    && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh) {
+			//	if (!c->isfloating && selmon->tagview->arrange
+			//	    && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+			//		togglefloating(NULL);
+			//}
 			if (!selmon->tagview->arrange || c->isfloating)
 				resize(c, c->x, c->y, nw, nh, 1);
 			break;
@@ -284,6 +285,7 @@ tag_send(const Arg *arg)
 
 	tagview_add_client(dst_tagview, c);
 	tagview_rm_client(selmon->tagview, c);
+	client_unfocus(c, true);
 	client_focus(NULL);
 	mon_arrange(selmon);
 
@@ -296,11 +298,6 @@ tag_send(const Arg *arg)
 
 	if (other_mon != NULL) {
 		printf("Tagview is visible, arrange\n");
-		///// v Probably not a good solution, clients
-		///// shouldn't need to be aware of their monitor. The
-		///// tagview should draw their clients / move their X
-		///// properties such as location.
-		client_mon_set(c, other_mon);
 		mon_arrange(other_mon);
 	}
 }
@@ -451,7 +448,12 @@ void to_master_send(const Arg *arg)
 		return;
 	}
 
-	pop(c);
+	list_data_swap(
+		&selmon->tagview->clients,
+		c,
+		selmon->tagview->clients.head->data);
+	client_focus(c);
+	mon_arrange(selmon);
 }
 
 //******************************************************************************

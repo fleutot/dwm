@@ -40,8 +40,12 @@ void mon_selected_client_set(struct Monitor *m, struct Client *c);
 void mon_tag_switch(struct Monitor *m, struct tagview *tagview);
 void mon_arrange(Monitor *m);
 
+/* Callbacks for lists */
+bool mon_has_client(void *monitor, void *client);
 bool mon_has_window(void *monitor, void *window);
 bool mon_shows_tagview(void *monitor, void *tagview);
+void mon_arrange_cb(void *monitor, void *storage);
+
 
 int area_in_mon(int x, int y, int w, int h, const Monitor *m);
 

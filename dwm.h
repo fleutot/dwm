@@ -45,8 +45,6 @@ extern bool skip_mouse_over_focus_once;
 void focus(Client *c);
 int getrootptr(int *x, int *y);
 void dwm_quit(void);
-bool isvisible(const Client *c);
-void pop(Client *c);
 Monitor *recttomon(int x, int y, int w, int h);
 void restack(Monitor *m);
 int sendevent(Client *c, Atom proto);

@@ -66,6 +66,23 @@ void list_add_before(struct list *list, void *at, void *data)
 	list_insert_node(list, AFTER, n, data);
 }
 
+void list_add_before_selected(struct list *list, void *data)
+{
+	struct ll_node *n;
+
+	if (list->head == list->selected) {
+		list_insert_node(list, BEFORE, list->head, data);
+	} else {
+		for (
+			n = list->head;
+			n != NULL && n->next != NULL
+			&& n->next->data != list->selected->data;
+			n = n->next) {
+		}
+		list_insert_node(list, AFTER, n, data);
+	}
+}
+
 static void list_insert_node(
 	struct list *list,
 	enum placement placement,
@@ -177,7 +194,6 @@ void list_destroy(struct list *list)
 		struct ll_node *next;
 		for (struct ll_node *n = list->head; n != NULL; n = next) {
 			next = n->next;
-			free(n->data);
 			free(n);
 		}
 	}
@@ -315,6 +331,38 @@ void *list_selected_data_get(struct list *list)
 		return NULL;
 	}
 	return list->selected->data;
+}
+
+void list_data_swap(struct list *list, void *a, void *b)
+{
+	struct ll_node *first, *second;
+
+	struct ll_node *n;
+
+	for (n = list->head;
+	     n != NULL && n->data != a && n->data != b;
+	     n = n->next) {
+	}
+	if (n == NULL) {
+		return;
+	}
+	first = n;
+
+	for (n = n->next;
+	     n != NULL && n->data != a && n->data != b;
+	     n = n->next) {
+	}
+
+	if (n == NULL) {
+		return;
+	}
+	second = n;
+
+
+	void *tmp = first->data;
+
+	first->data = second->data;
+	second->data = tmp;
 }
 
 //  ----------------------------------------------------------------------------

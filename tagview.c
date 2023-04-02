@@ -54,7 +54,6 @@ void tagview_show(struct tagview *tv, struct Monitor *m)
 		return;
 	}
 	m->tagview = tv;
-	list_run_for_all(&tv->clients, client_mon_set, m);
 	tagview_arrange(m);
 	list_run_for_all(&tv->clients, client_show, NULL);
 }
@@ -79,14 +78,19 @@ void tagview_layout_set(struct tagview *t, enum layout_index layout)
 	// Also run it?
 }
 
+bool tagview_has_client(struct tagview *t, struct Client *c)
+{
+	return list_find(
+		&t->clients,
+		client_equal,
+		(struct Client *) c);
+}
+
 void tagview_add_client(struct tagview *t, Client *c)
 {
 	P_DEBUG("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
 
-	///	ERRROR HERE: selected may be NULL. Modify `list_add_before` to allow
-	///		adding to empty list if second parameter is null.
-
-	list_add_before(&t->clients, t->clients.selected->data, c);
+	list_add_before_selected(&t->clients, c);
 }
 
 void tagview_rm_client(struct tagview *t, Client *c)

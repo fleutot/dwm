@@ -61,6 +61,7 @@ void list_prepend(struct list *list, void *data);
 /// dynamically. Addresses to auto or global variables may not be used.
 //  ----------------------------------------------------------------------------
 void list_add_before(struct list *l, void *at, void *data);
+void list_add_before_selected(struct list *l, void *data);
 
 void list_rm(struct list *l, void *data);
 
@@ -114,6 +115,11 @@ void *list_prev_select(struct list *l);
 void *list_next_wrap_select(struct list *l);
 void *list_prev_wrap_select(struct list *l);
 void *list_selected_data_get(struct list *l);
+
+//  ----------------------------------------------------------------------------
+/// \brief swap the data pointers between to elements of the list.
+//  ----------------------------------------------------------------------------
+void list_data_swap(struct list *list, void *a, void *b);
 
 //  ----------------------------------------------------------------------------
 /// \brief  Get the pointer to the data of the node at position. If position
