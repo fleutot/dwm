@@ -1052,6 +1052,8 @@ updategeom(void)
 				}
 			}
 		}
+		selmon = list_head_select(&mons);
+
 		dirty = true;
 		free(unique);
 	} else
