@@ -544,14 +544,6 @@ keypress(const XEvent *e)
 			keys[i].func(&(keys[i].arg));
 }
 
-/*
- * TODO: this function creates new client windows. Should move to client.c?
- */
-void
-manage_REFACTORED(Window w, XWindowAttributes *wa)
-{
-}
-
 void
 mappingnotify(const XEvent *e)
 {

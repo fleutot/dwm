@@ -104,8 +104,9 @@ Key keys[] = {
 	{ MODKEY | ShiftMask,     XK_space,  togglefloating, { 0 } },
        // TODO: keeping this focusmon for now, but I want absolute mon
        // selection in the future. Mod+w = select monitor 1
-	{ MODKEY,                 XK_comma,  focusmon,       { .i  = -1          } },
-	{ MODKEY,                 XK_period, focusmon,       { .i  = +1          } },
+	{ MODKEY,                 XK_w,      monitor_focus,  { .i  = 0          } },
+	{ MODKEY,                 XK_e,      monitor_focus,  { .i  = 1          } },
+	{ MODKEY,                 XK_r,      monitor_focus,  { .i  = 2          } },
 	{ MODKEY | ShiftMask,     XK_comma,  tagmon,         { .i  = -1          } },
 	{ MODKEY | ShiftMask,     XK_period, tagmon,         { .i  = +1          } },
 	TAGKEYS(XK_1, 0),

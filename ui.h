@@ -8,7 +8,7 @@ typedef union {
 	const void *v;
 } Arg;
 
-void focusmon(const Arg *arg);
+void monitor_focus(const Arg *arg);
 void focusstack(const Arg *arg);
 void incnmaster(const Arg *arg);
 void killclient(const Arg *arg);

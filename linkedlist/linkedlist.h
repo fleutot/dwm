@@ -122,16 +122,14 @@ void *list_selected_data_get(struct list *l);
 void list_data_swap(struct list *list, void *a, void *b);
 
 //  ----------------------------------------------------------------------------
-/// \brief  Get the pointer to the data of the node at position. If position
-/// goes beyond the number of elemnts of list, wrap around (go on form head
-/// after reaching tail).
+/// \brief  Get the pointer to the data of the node at position.
 /// \param  list The list to explore.
 /// \param  position The index to the node of interest.
+/// \return NULL if invalid position, pointer to the data otherwise.
 //  ----------------------------------------------------------------------------
 void *list_data_handle_get(
 	struct list *l,
 	unsigned int const position);
-
 
 //  ----------------------------------------------------------------------------
 /// \brief Get the size of the list passed as parameter.

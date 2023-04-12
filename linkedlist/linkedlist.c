@@ -376,6 +376,10 @@ void *list_data_handle_get(
 	struct list * const list,
 	unsigned int const position)
 {
+	if (position > list->size - 1) {
+		return NULL;
+	}
+
 	// TODO: this does not really need a walker function, can be
 	// done directly here.
 	struct ll_node *walker = nodes_walker(list->head, position);

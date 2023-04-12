@@ -131,15 +131,18 @@ static void test_list_data_handle_get(void)
 	assert(result_ptr != NULL);
 	assert(*result_ptr == data[pos]);
 
-	// Test the wrap around functionality.
-	const unsigned int other_pos = 2;
+	// Test out of bound.
 	result_ptr = (int *) list_data_handle_get(
 		&list,
-		other_pos + NB_ELEMENTS(data)
+		NB_ELEMENTS(data)
 		);
+	assert(result_ptr == NULL);
 
-	assert(result_ptr != NULL);
-	assert(*result_ptr == data[other_pos]);
+	result_ptr = (int *) list_data_handle_get(
+		&list,
+		NB_ELEMENTS(data) + 1
+		);
+	assert(result_ptr == NULL);
 
 	list_destroy(&list);
 	TEST_END_PRINT();

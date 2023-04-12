@@ -13,31 +13,21 @@
 //******************************************************************************
 // Prototypes
 //******************************************************************************
-static struct Monitor *dirtomon(int dir);
 
 //******************************************************************************
 // Definitions
 //******************************************************************************
-void
-focusmon(const Arg *arg)
+void monitor_focus(const Arg *arg)
 {
-	struct Monitor *m;
+	int index = arg->i;
+	struct Monitor *target_mon = list_data_handle_get(&mons, index);
 
-#if 0
-	// Unnecessary, dirtomon takes care of size 1. and 0 To be verified
-	if (mons.size <= 1)
+	if (selmon == target_mon || target_mon == NULL) {
 		return;
-#endif
-	m = dirtomon(arg->i);
-	P_DEBUG("%s: selmon = %p,  m = %p\n",
-		__func__,
-		(void *) selmon,
-		(void *) m);
-	if (m == selmon)
-		return;
+	}
 	client_unfocus(mon_selected_client_get(selmon), false);
-	selmon = m;
-	mon_arrange(m);
+	selmon = target_mon;
+	mon_arrange(target_mon);
 	client_focus(NULL);
 }
 
@@ -459,12 +449,3 @@ void to_master_send(const Arg *arg)
 //******************************************************************************
 // Internal functions
 //******************************************************************************
-static struct Monitor *
-dirtomon(int dir)
-{
-	if (dir > 0) {
-		return list_next_select(&mons);
-	} else {
-		return list_prev_select(&mons);
-	}
-}
