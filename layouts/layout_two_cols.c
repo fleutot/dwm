@@ -20,6 +20,8 @@ struct positioning {
 	const int stack_client_h;
 };
 
+static int border_width = 3;
+
 static void client_position_apply(void *client, void *storage)
 {
 	struct Client *c = (struct Client *) client;
@@ -35,15 +37,16 @@ static void client_position_apply(void *client, void *storage)
 			c,
 			p->master_x,
 			p->current_master_y,
-			p->master_w - (2 * c->bw),
-			p->master_client_h - (2 * c->bw),
+			p->master_w - (2 * border_width),
+			p->master_client_h - (2 * border_width),
+			border_width,
 			0
 			);
 		P_DEBUG("(x, y, w, h): (%d, %d, %d, %d)\n",
 			p->master_x,
 			p->current_master_y,
-			p->master_w - (2 * c->bw),
-			p->master_client_h - (2 * c->bw));
+			p->master_w - (2 * border_width),
+			p->master_client_h - (2 * border_width));
 		p->current_master_y += p->master_client_h;
 	} else {
 		// Stack area
@@ -52,15 +55,16 @@ static void client_position_apply(void *client, void *storage)
 			c,
 			p->master_x + p->master_w,
 			p->current_stack_y,
-			p->stack_w - (2 * c->bw),
-			p->stack_client_h - (2 * c->bw),
+			p->stack_w - (2 * border_width),
+			p->stack_client_h - (2 * border_width),
+			border_width,
 			0
 			);
 		P_DEBUG("(x, y, w, h): (%d, %d, %d, %d)\n",
 			p->master_x + p->master_w,
 			p->current_stack_y,
-			p->stack_w - (2 * c->bw),
-			p->stack_client_h - (2 * c->bw));
+			p->stack_w - (2 * border_width),
+			p->stack_client_h - (2 * border_width));
 		p->current_stack_y += p->stack_client_h;
 	}
 	p->current_client_index++;

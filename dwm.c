@@ -198,6 +198,7 @@ buttonpress(const XEvent *e)
 void
 checkotherwm(void)
 {
+	printf("ERROR: %s\n", __func__);
 	xerrorxlib = XSetErrorHandler(xerrorstart);
 	/* this causes an error if some other window manager is running */
 	XSelectInput(dpy, DefaultRootWindow(dpy), SubstructureRedirectMask);
@@ -745,7 +746,7 @@ setup(void)
 	XSetWindowAttributes wa;
 	Atom utf8string;
 
-	P_DEBUG("%s\n", __func__); fflush(stdout);
+	printf("%s\n", __func__); fflush(stdout);
 
 	/* clean up any zombies immediately */
 	sigchld(0);
@@ -806,10 +807,10 @@ setup(void)
 			| LeaveWindowMask | StructureNotifyMask | PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask | CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
-	P_DEBUG("--------------------ROOT: %lx\n", root);
+	printf("--------------------ROOT: %lx\n", root);
 	grabkeys();
 	client_focus(NULL);
-	P_DEBUG("setup done\n");
+	printf("setup done\n");
 }
 
 
@@ -992,9 +993,9 @@ updategeom(void)
 		new_num_mons = j;
 
 		if (mons.size <= new_num_mons) {
-			P_DEBUG("updategeom: new monitors, from %d to %d\n",
-				mons.size,
-				new_num_mons);
+			printf("updategeom: new monitors, from %d to %d\n",
+			       mons.size,
+			       new_num_mons);
 			/* More monitors available */
 			for (i = mons.size; i < new_num_mons; i++) {
 				P_DEBUG(

@@ -135,7 +135,10 @@ movemouse(const Arg *arg)
 			    && (abs(nx - c->x) > snap || abs(ny - c->y) > snap))
 				togglefloating(NULL);
 			if (!selmon->tagview->arrange || c->isfloating)
-				resize(c, nx, ny, c->w, c->h, 1);
+				/// 3 as border_width is not correct,
+				/// but mousemove will change, to put
+				/// window in another layer.
+				resize(c, nx, ny, c->w, c->h, 3, 1);
 			break;
 		}
 	} while (ev.type != ButtonRelease);
@@ -198,7 +201,11 @@ resizemouse(const Arg *arg)
 			//		togglefloating(NULL);
 			//}
 			if (!selmon->tagview->arrange || c->isfloating)
-				resize(c, c->x, c->y, nw, nh, 1);
+				/// hard-coded 3 is not good, but
+				/// mouse movements should changs
+				/// anyway, to put window in another
+				/// layer.
+				resize(c, c->x, c->y, nw, nh, 3, 1);
 			break;
 		}
 	} while (ev.type != ButtonRelease);

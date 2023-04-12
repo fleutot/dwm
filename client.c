@@ -33,7 +33,8 @@ void client_create(Window w, XWindowAttributes *wa)
 	Client *c = NULL;
 	struct Monitor *m, *mon_from_transient;
 	Window trans = None;
-	XWindowChanges wc;
+
+	////// XWindowChanges wc;
 
 	c = ecalloc(1, sizeof(Client));
 	c->win = w;
@@ -53,21 +54,23 @@ void client_create(Window w, XWindowAttributes *wa)
 	}
 	/// TODO: Client creation should not bother about monitors!
 	/// It should create in the current tagview (if not
-	/// transient?), and let the tagview deal with geometry.
+	/// transient?), and let the tagview's layout deal with geometry.
 
-	if (c->x + width(c) > m->mx + m->mw)
-		c->x = m->mx + m->mw - width(c);
-	if (c->y + height(c) > m->my + m->mh)
-		c->y = m->my + m->mh - height(c);
-	c->x = MAX(c->x, m->mx);
-	/* only fix client y-offset, if the client center might cover the bar */
-	c->y = MAX(c->y, ((m->by == m->my) && (c->x + (c->w / 2) >= m->wx)
-			  && (c->x + (c->w / 2) < m->wx + m->ww)) ? bar_h : m->my);
-	c->bw = borderpx;
-
-	wc.border_width = c->bw;
-	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
-	XSetWindowBorder(dpy, w, scheme[SchemeNorm][ColBorder].pixel);
+	////// This below paints the border. Better let the layout do
+	//////  it, so that different layouts might do different things.
+	//////  if (c->x + width(c) > m->mx + m->mw)
+	//////  	c->x = m->mx + m->mw - width(c);
+	//////  if (c->y + height(c) > m->my + m->mh)
+	//////  	c->y = m->my + m->mh - height(c);
+	//////  c->x = MAX(c->x, m->mx);
+	//////  /* only fix client y-offset, if the client center might cover the bar */
+	//////  c->y = MAX(c->y, ((m->by == m->my) && (c->x + (c->w / 2) >= m->wx)
+	//////  		  && (c->x + (c->w / 2) < m->wx + m->ww)) ? bar_h : m->my);
+	//////  c->bw = borderpx;
+	//////
+	////// wc.border_width = borderpx;
+	////// XConfigureWindow(dpy, w, CWBorderWidth, &wc);
+	////// XSetWindowBorder(dpy, w, scheme[SchemeNorm][ColBorder].pixel);
 	configure(c); /* propagates border_width, if size doesn't change */
 	client_update_window_type(c);
 	client_update_size_hints(c);
@@ -158,7 +161,12 @@ void client_focus(struct Client *c)
 		client_urgent_set(c, true);
 	}
 
+	printf("%s\n", __func__);
 	grab_buttons(c, true);
+
+	////// This runs, but has no effect. Maybe the windows don't
+	////// have a border width?
+
 	XSetWindowBorder(dpy, c->win, scheme[SchemeSel][ColBorder].pixel);
 	dm_focus(c);
 	tagview_selected_client_set(selmon->tagview, c);
@@ -277,7 +285,7 @@ void client_fullscreen_set(Client *c, bool fullscreen)
 		c->oldbw = c->bw;
 		c->bw = 0;
 		c->isfloating = 1;
-		resizeclient(c, m->mx, m->my, m->mw, m->mh);
+		resizeclient(c, m->mx, m->my, m->mw, m->mh, 0);
 		XRaiseWindow(dpy, c->win);
 	} else if (!fullscreen && c->isfullscreen) {
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
@@ -289,7 +297,8 @@ void client_fullscreen_set(Client *c, bool fullscreen)
 		c->y = c->oldy;
 		c->w = c->oldw;
 		c->h = c->oldh;
-		resizeclient(c, c->x, c->y, c->w, c->h);
+		/// 3 is wrong, but let layouts deal with that, soon.
+		resizeclient(c, c->x, c->y, c->w, c->h, 3);
 		mon_arrange(m);
 	}
 }
@@ -331,37 +340,49 @@ isvisible(const Client *c)
 }
 
 void
-resize(Client *c, int x, int y, int w, int h, int interact)
+resize(Client *c, int x, int y, int w, int h, int border_width, int interact)
 {
 	if (applysizehints(c, &x, &y, &w, &h, interact))
-		resizeclient(c, x, y, w, h);
+		resizeclient(c, x, y, w, h, border_width);
 }
 
 void
-resizeclient(Client *c, int x, int y, int w, int h)
+resizeclient(Client *c, int x, int y, int w, int h, int border_width)
 {
 	XWindowChanges wc;
 
-	c->oldx = c->x; c->x = wc.x = x;
-	c->oldy = c->y; c->y = wc.y = y;
-	c->oldw = c->w; c->w = wc.width = w;
-	c->oldh = c->h; c->h = wc.height = h;
-	wc.border_width = c->bw;
+	wc.x = x;
+	wc.y = y;
+	wc.width = w;
+	wc.height = h;
+	wc.border_width = border_width;
+
 	XConfigureWindow(dpy, c->win, CWX | CWY | CWWidth | CWHeight | CWBorderWidth, &wc);
-	configure(c);
 	XSync(dpy, False);
 }
 
 int
 width(const Client *c)
 {
-	return c->w + (2 * c->bw);
+	XWindowAttributes wa;
+
+	if (!XGetWindowAttributes(dpy, c->win, &wa)) {
+		return -1;
+	}
+
+	return wa.width + (2 * wa.border_width);
 }
 
 int
 height(const Client *c)
 {
-	return c->h + (2 * c->bw);
+	XWindowAttributes wa;
+
+	if (!XGetWindowAttributes(dpy, c->win, &wa)) {
+		return -1;
+	}
+
+	return wa.height + (2 * wa.border_width);
 }
 
 //******************************************************************************

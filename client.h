@@ -71,7 +71,7 @@ bool isvisible(const Client *c);
 int width(const Client *c);
 int height(const Client *c);
 void configure(Client *c);
-void resize(Client *c, int x, int y, int w, int h, int interact);
-void resizeclient(Client *c, int x, int y, int w, int h);
+void resize(Client *c, int x, int y, int w, int h, int border_width, int interact);
+void resizeclient(Client *c, int x, int y, int w, int h, int border_width);
 
 #endif
