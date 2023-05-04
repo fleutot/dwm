@@ -39,12 +39,15 @@ void client_create(Window w, XWindowAttributes *wa)
 	c = ecalloc(1, sizeof(Client));
 	c->win = w;
 	/* geometry */
+
+	////////////////// Something makes this necessary. Why? I
+	////////////////// thought the layout could take care of it.
 	c->x = c->oldx = wa->x;
 	c->y = c->oldy = wa->y;
 	c->w = c->oldw = wa->width;
 	c->h = c->oldh = wa->height;
 	c->oldbw = wa->border_width;
-
+	//////////////////
 	client_name_update(c);
 	if (XGetTransientForHint(dpy, w, &trans) && (mon_from_transient = wintomon(trans))) {
 		m = mon_from_transient;
@@ -52,25 +55,7 @@ void client_create(Window w, XWindowAttributes *wa)
 		m = selmon;
 		apply_rules(c);
 	}
-	/// TODO: Client creation should not bother about monitors!
-	/// It should create in the current tagview (if not
-	/// transient?), and let the tagview's layout deal with geometry.
 
-	////// This below paints the border. Better let the layout do
-	//////  it, so that different layouts might do different things.
-	//////  if (c->x + width(c) > m->mx + m->mw)
-	//////  	c->x = m->mx + m->mw - width(c);
-	//////  if (c->y + height(c) > m->my + m->mh)
-	//////  	c->y = m->my + m->mh - height(c);
-	//////  c->x = MAX(c->x, m->mx);
-	//////  /* only fix client y-offset, if the client center might cover the bar */
-	//////  c->y = MAX(c->y, ((m->by == m->my) && (c->x + (c->w / 2) >= m->wx)
-	//////  		  && (c->x + (c->w / 2) < m->wx + m->ww)) ? bar_h : m->my);
-	//////  c->bw = borderpx;
-	//////
-	////// wc.border_width = borderpx;
-	////// XConfigureWindow(dpy, w, CWBorderWidth, &wc);
-	////// XSetWindowBorder(dpy, w, scheme[SchemeNorm][ColBorder].pixel);
 	configure(c); /* propagates border_width, if size doesn't change */
 	client_update_window_type(c);
 	client_update_size_hints(c);
@@ -312,11 +297,15 @@ configure(Client *c)
 	ce.display = dpy;
 	ce.event = c->win;
 	ce.window = c->win;
+
+	////////////////// Something makes this necessary. Why? I
+	////////////////// thought the layout could take care of it.
 	ce.x = c->x;
 	ce.y = c->y;
 	ce.width = c->w;
 	ce.height = c->h;
 	ce.border_width = c->bw;
+	//////////////////
 	ce.above = None;
 	ce.override_redirect = False;
 	XSendEvent(dpy, c->win, False, StructureNotifyMask, (XEvent *) &ce);

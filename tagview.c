@@ -89,7 +89,6 @@ bool tagview_has_client(struct tagview *t, struct Client *c)
 void tagview_add_client(struct tagview *t, Client *c)
 {
 	P_DEBUG("%s(%p, %p)\n", __func__, (void *) t, (void *) c);
-
 	list_add_before_selected(&t->clients, c);
 }
 

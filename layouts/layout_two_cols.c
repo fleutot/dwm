@@ -3,6 +3,7 @@
 #include "layouts/layout_two_cols.h"
 
 #include "debug.h"
+#include "dwm.h"
 #include "monitor.h"
 
 struct positioning {
@@ -32,7 +33,12 @@ static void client_position_apply(void *client, void *storage)
 		P_DEBUG("in master area\n");
 		// Master area
 		// TODO: shouldn't Client deal with border width internally?
-		// But that would disallow layouts from managing them...
+		// But that would disallow layouts from managing
+		// them...
+		XWindowChanges window_changes = {
+			.border_width = border_width
+		};
+		XConfigureWindow(dpy, c->win, CWBorderWidth, &window_changes);
 		resize(
 			c,
 			p->master_x,
