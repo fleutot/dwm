@@ -70,8 +70,8 @@ bool client_equal(void *client_a, void *client_b)
 bool isvisible(const Client *c);
 int width(const Client *c);
 int height(const Client *c);
-void configure(Client *c);
-void resize(Client *c, int x, int y, int w, int h, int border_width, int interact);
+void client_configure(Client *c);
+void client_resize(Client *c, int x, int y, int w, int h, int border_width, int interact);
 void resizeclient(Client *c, int x, int y, int w, int h, int border_width);
 
 #endif

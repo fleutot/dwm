@@ -126,7 +126,7 @@ Client *tagview_selected_client_get(struct tagview *t)
 	return (Client *) list_selected_data_get(&t->clients);
 }
 
-void tagview_selected_client_set(struct tagview *t, const struct Client *c)
+void tagview_client_select(struct tagview *t, const struct Client *c)
 {
 	list_select(&t->clients, c);
 }

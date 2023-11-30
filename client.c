@@ -38,15 +38,14 @@ void client_create(Window w, XWindowAttributes *wa)
 
 	c = ecalloc(1, sizeof(Client));
 	c->win = w;
-	/* geometry */
 
 	////////////////// Something makes this necessary. Why? I
 	////////////////// thought the layout could take care of it.
-	c->x = c->oldx = wa->x;
-	c->y = c->oldy = wa->y;
-	c->w = c->oldw = wa->width;
-	c->h = c->oldh = wa->height;
-	c->oldbw = wa->border_width;
+	c->x = wa->x;
+	c->y = wa->y;
+	c->w = wa->width;
+	c->h = wa->height;
+	//c->oldbw = wa->border_width;
 	//////////////////
 	client_name_update(c);
 	if (XGetTransientForHint(dpy, w, &trans) && (mon_from_transient = wintomon(trans))) {
@@ -56,7 +55,7 @@ void client_create(Window w, XWindowAttributes *wa)
 		apply_rules(c);
 	}
 
-	configure(c); /* propagates border_width, if size doesn't change */
+	client_configure(c); /* propagates border_width, if size doesn't change */
 	client_update_window_type(c);
 	client_update_size_hints(c);
 	client_update_wm_hints(c);
@@ -152,9 +151,11 @@ void client_focus(struct Client *c)
 	////// This runs, but has no effect. Maybe the windows don't
 	////// have a border width?
 
+	////// Setting border colo should be the responsibility of the
+	////// tagview layout.
 	XSetWindowBorder(dpy, c->win, scheme[SchemeSel][ColBorder].pixel);
 	dm_focus(c);
-	tagview_selected_client_set(selmon->tagview, c);
+	tagview_client_select(selmon->tagview, c);
 	bar_draw_all_mons(&mons);
 }
 
@@ -289,7 +290,7 @@ void client_fullscreen_set(Client *c, bool fullscreen)
 }
 
 void
-configure(Client *c)
+client_configure(Client *c)
 {
 	XConfigureEvent ce;
 
@@ -300,11 +301,11 @@ configure(Client *c)
 
 	////////////////// Something makes this necessary. Why? I
 	////////////////// thought the layout could take care of it.
-	ce.x = c->x;
-	ce.y = c->y;
-	ce.width = c->w;
-	ce.height = c->h;
-	ce.border_width = c->bw;
+	// ce.x = c->x;
+	// ce.y = c->y;
+	// ce.width = c->w;
+	// ce.height = c->h;
+	// ce.border_width = c->bw;
 	//////////////////
 	ce.above = None;
 	ce.override_redirect = False;
@@ -329,7 +330,7 @@ isvisible(const Client *c)
 }
 
 void
-resize(Client *c, int x, int y, int w, int h, int border_width, int interact)
+client_resize(Client *c, int x, int y, int w, int h, int border_width, int interact)
 {
 	if (applysizehints(c, &x, &y, &w, &h, interact))
 		resizeclient(c, x, y, w, h, border_width);

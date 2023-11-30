@@ -39,7 +39,7 @@ static void client_position_apply(void *client, void *storage)
 			.border_width = border_width
 		};
 		XConfigureWindow(dpy, c->win, CWBorderWidth, &window_changes);
-		resize(
+		client_resize(
 			c,
 			p->master_x,
 			p->current_master_y,
@@ -57,7 +57,7 @@ static void client_position_apply(void *client, void *storage)
 	} else {
 		// Stack area
 		P_DEBUG("in stack area\n");
-		resize(
+		client_resize(
 			c,
 			p->master_x + p->master_w,
 			p->current_stack_y,

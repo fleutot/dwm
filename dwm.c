@@ -340,11 +340,11 @@ configurerequest(const XEvent *e)
 			if ((c->y + c->h) > m->my + m->mh && c->isfloating)
 				c->y = m->my + (m->mh / 2 - height(c) / 2);     /* center in y direction */
 			if ((ev->value_mask & (CWX | CWY)) && !(ev->value_mask & (CWWidth | CWHeight)))
-				configure(c);
+				client_configure(c);
 			if (isvisible(c))
 				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 		} else {
-			configure(c);
+			client_configure(c);
 		}
 	} else {
 		wc.x = ev->x;

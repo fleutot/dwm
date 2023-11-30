@@ -138,7 +138,7 @@ movemouse(const Arg *arg)
 				/// 3 as border_width is not correct,
 				/// but mousemove will change, to put
 				/// window in another layer.
-				resize(c, nx, ny, c->w, c->h, 3, 1);
+				client_resize(c, nx, ny, c->w, c->h, 3, 1);
 			break;
 		}
 	} while (ev.type != ButtonRelease);
@@ -205,7 +205,7 @@ resizemouse(const Arg *arg)
 				/// mouse movements should changs
 				/// anyway, to put window in another
 				/// layer.
-				resize(c, c->x, c->y, nw, nh, 3, 1);
+				client_resize(c, c->x, c->y, nw, nh, 3, 1);
 			break;
 		}
 	} while (ev.type != ButtonRelease);
